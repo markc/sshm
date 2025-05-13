@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\SshConfig;
 use App\Policies\SshCommandRunnerPolicy;
+use App\Services\SshManagerService;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -22,8 +23,10 @@ class SshCommandRunner extends Page
     protected static ?string $navigationIcon = 'heroicon-o-command-line';
 
     protected static ?string $navigationLabel = 'SSH Command Runner';
+    
+    protected static ?string $navigationGroup = 'SSH Management';
 
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 1;
 
     protected static string $view = 'filament.pages.ssh-command-runner';
 
@@ -39,6 +42,14 @@ class SshCommandRunner extends Page
 
     public function mount(): void
     {
+        // Ensure SSH directory is initialized
+        $sshManager = new SshManagerService();
+        try {
+            $sshManager->initializeSshDirectory();
+        } catch (\Exception $e) {
+            // Just continue, we'll still try to load whatever connections are in the database
+        }
+        
         $this->form->fill();
     }
 
