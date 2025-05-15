@@ -1,0 +1,94 @@
+<x-filament-panels::page>
+    <div class="space-y-6">
+        @if($hasOutput)
+            <div id="command-output-alert" class="mb-6">
+                @if($commandOutput)
+                    <div class="p-3 bg-white text-gray-800 font-mono text-sm rounded border border-gray-200 overflow-x-auto">
+                        <pre>{{ $commandOutput }}</pre>
+                    </div>
+                @endif
+                
+                @if($commandError)
+                    <div class="mt-2 p-3 bg-white text-red-800 font-mono text-sm rounded border border-red-200 overflow-x-auto">
+                        <pre>{{ $commandError }}</pre>
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        <!-- Manual layout since we're having issues with the form components -->
+        <div class="bg-white rounded-xl shadow p-6 border border-gray-200">
+            <form wire:submit.prevent="runCommand">
+                <!-- Hidden form fields for data -->
+                @foreach($data as $key => $value)
+                    @if(is_bool($value))
+                        <input type="hidden" name="data.{{ $key }}" value="{{ $value ? '1' : '0' }}" wire:model="data.{{ $key }}">
+                    @else
+                        <input type="hidden" name="data.{{ $key }}" value="{{ $value }}" wire:model="data.{{ $key }}">
+                    @endif
+                @endforeach
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Left Column: Command textarea -->
+                    <div>
+                        <label for="command" class="block text-sm font-medium text-gray-700 mb-1">Enter SSH Command(s)</label>
+                        <textarea id="command" name="data[command]" rows="3" wire:model="data.command" required placeholder="Enter the SSH command(s) to execute..." class="w-full rounded-lg shadow-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500"></textarea>
+                    </div>
+                    
+                    <!-- Right Column: SSH Connection and Debug Mode -->
+                    <div class="space-y-6">
+                        <!-- SSH Connection Dropdown -->
+                        <div>
+                            <label for="ssh_config_id" class="block text-sm font-medium text-gray-700 mb-2">
+                                SSH Connection
+                            </label>
+                            <select id="ssh_config_id" name="data[ssh_config_id]" wire:model="data.ssh_config_id" required class="w-full rounded-lg shadow-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500">
+                                @foreach(\App\Models\SshConfig::all() as $config)
+                                    <option value="{{ $config->id }}" {{ ($data['ssh_config_id'] ?? '') == $config->id ? 'selected' : '' }}>
+                                        {{ $config->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <!-- Controls Container -->
+                        <div class="pt-2 space-y-4 md:flex md:items-center md:justify-between md:space-y-0">
+                            <!-- Debug Toggle -->
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-700">Enable Debug Mode</span>
+                                <div class="ml-4">
+                                    <button type="button"
+                                        x-data="{ checked: @entangle('data.debug_mode').defer }"
+                                        x-on:click="checked = !checked"
+                                        x-bind:class="checked ? 'bg-primary-600' : 'bg-gray-200'"
+                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2">
+                                        <span class="sr-only">Toggle debug mode</span>
+                                        <span aria-hidden="true"
+                                            x-bind:class="checked ? 'translate-x-5' : 'translate-x-0'"
+                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Run Command Button -->
+                            <div class="md:ml-4">
+                                <x-filament::button type="submit" color="primary">
+                                    Run Command
+                                </x-filament::button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        @if($hasDebugOutput)
+            <div id="debug-output" class="mt-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Connection Debug Information</h3>
+                <div class="p-3 bg-slate-100 text-gray-800 font-mono text-sm rounded border border-slate-300 overflow-x-auto">
+                    <pre>{{ $debugOutput }}</pre>
+                </div>
+            </div>
+        @endif
+    </div>
+</x-filament-panels::page>

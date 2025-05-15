@@ -16,22 +16,22 @@ class ListSshConfigs extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
-            
+
             Actions\Action::make('syncConfigs')
                 ->label('Sync Config Files')
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
                     $sshManager = new SshManagerService();
-                    
+
                     try {
                         // Initialize SSH directory if it doesn't exist
                         $sshManager->initializeSshDirectory();
-                        
+
                         // Sync the configs
                         $result = $sshManager->syncConfigsWithDatabase();
-                        
+
                         $message = "Config files synchronized: {$result['added']} added, {$result['skipped']} skipped";
-                        
+
                         Notification::make()
                             ->title('SSH Configs Synchronized')
                             ->body($message)
@@ -47,7 +47,7 @@ class ListSshConfigs extends ListRecords
                 }),
         ];
     }
-    
+
     public function mount(): void
     {
         // Ensure SSH directory is initialized
@@ -57,7 +57,7 @@ class ListSshConfigs extends ListRecords
         } catch (\Exception $e) {
             // Swallow exception - we'll still try to load whatever data we can
         }
-        
+
         parent::mount();
     }
 }

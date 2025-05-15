@@ -12,21 +12,21 @@ use Illuminate\Database\Eloquent\Model;
 class CreateSshKey extends CreateRecord
 {
     protected static string $resource = SshKeyResource::class;
-    
+
     protected function handleRecordCreation(array $data): Model
     {
         try {
             // Initialize SSH directory if it doesn't exist
             $sshManager = new SshManagerService();
             $sshManager->initializeSshDirectory();
-            
+
             // Create the SSH key
             $keyDetails = $sshManager->createKey(
                 $data['name'],
                 $data['comment'] ?? '',
-                $data['has_password'] ? ($this->data['password'] ?? '') : ''
+                $data['has_password'] ? $this->data['password'] ?? '' : '',
             );
-            
+
             // Create the database record
             return static::getModel()::create([
                 'name' => $data['name'],
@@ -43,7 +43,7 @@ class CreateSshKey extends CreateRecord
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
-                
+
             $this->halt();
         }
     }

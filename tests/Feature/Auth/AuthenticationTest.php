@@ -19,9 +19,7 @@ test('users can authenticate using the login screen', function () {
         ->set('password', 'password')
         ->call('login');
 
-    $response
-        ->assertHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+    $response->assertHasNoErrors()->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticated();
 });

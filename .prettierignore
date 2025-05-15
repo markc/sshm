@@ -1,0 +1,14 @@
+# Ignore artifacts:
+/node_modules
+/vendor
+/public
+/storage
+/bootstrap/cache
+/.phpunit.cache
+
+# Ignore all HTML files:
+# *.html
+
+# Ignore specific files:
+# *.min.js
+# *.min.css

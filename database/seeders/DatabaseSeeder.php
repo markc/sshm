@@ -20,10 +20,6 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
         ]);
 
-        $this->call([
-            AdminUserSeeder::class,
-            SshConfigSeeder::class,
-            SshKeySeeder::class,
-        ]);
+        $this->call([AdminUserSeeder::class, SshConfigSeeder::class, SshKeySeeder::class]);
     }
 }

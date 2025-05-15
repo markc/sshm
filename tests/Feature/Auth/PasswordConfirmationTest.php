@@ -22,9 +22,7 @@ test('password can be confirmed', function () {
         ->set('password', 'password')
         ->call('confirmPassword');
 
-    $response
-        ->assertHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+    $response->assertHasNoErrors()->assertRedirect(route('dashboard', absolute: false));
 });
 
 test('password is not confirmed with invalid password', function () {

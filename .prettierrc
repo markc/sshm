@@ -1,0 +1,35 @@
+{
+    "tabWidth": 4,
+    "printWidth": 100,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "htmlWhitespaceSensitivity": "css",
+    "embeddedLanguageFormatting": "auto",
+    "bracketSameLine": false,
+    "plugins": ["@prettier/plugin-php", "prettier-plugin-blade"],
+    "phpVersion": "8.2",
+    "overrides": [
+        {
+            "files": "*.blade.php",
+            "options": {
+                "tabWidth": 4,
+                "parser": "blade",
+                "htmlWhitespaceSensitivity": "ignore"
+            }
+        },
+        {
+            "files": "*.html",
+            "options": {
+                "tabWidth": 4,
+                "htmlWhitespaceSensitivity": "ignore"
+            }
+        },
+        {
+            "files": "*.php",
+            "options": {
+                "tabWidth": 4,
+                "parser": "php"
+            }
+        }
+    ]
+}

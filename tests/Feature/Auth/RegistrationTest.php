@@ -18,9 +18,7 @@ test('new users can register', function () {
         ->set('password_confirmation', 'password')
         ->call('register');
 
-    $response
-        ->assertHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+    $response->assertHasNoErrors()->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticated();
 });

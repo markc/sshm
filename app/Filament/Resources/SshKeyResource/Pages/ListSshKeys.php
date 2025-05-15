@@ -16,22 +16,22 @@ class ListSshKeys extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
-            
+
             Actions\Action::make('syncKeys')
                 ->label('Sync SSH Keys')
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
                     $sshManager = new SshManagerService();
-                    
+
                     try {
                         // Initialize SSH directory if it doesn't exist
                         $sshManager->initializeSshDirectory();
-                        
+
                         // Sync the keys
                         $result = $sshManager->syncKeysWithDatabase();
-                        
+
                         $message = "Keys synchronized: {$result['added']} added, {$result['updated']} updated, {$result['removed']} removed";
-                        
+
                         Notification::make()
                             ->title('SSH Keys Synchronized')
                             ->body($message)
@@ -45,16 +45,16 @@ class ListSshKeys extends ListRecords
                             ->send();
                     }
                 }),
-                
+
             Actions\Action::make('initSsh')
                 ->label('Initialize SSH Dir')
                 ->icon('heroicon-o-folder-plus')
                 ->action(function () {
                     $sshManager = new SshManagerService();
-                    
+
                     try {
                         $result = $sshManager->initializeSshDirectory();
-                        
+
                         Notification::make()
                             ->title('SSH Directory Initialized')
                             ->body(implode(', ', $result))
@@ -68,19 +68,21 @@ class ListSshKeys extends ListRecords
                             ->send();
                     }
                 }),
-                
+
             Actions\Action::make('fixPermissions')
                 ->label('Fix SSH Permissions')
                 ->icon('heroicon-o-shield-check')
                 ->action(function () {
                     $sshManager = new SshManagerService();
-                    
+
                     try {
                         $sshManager->setPermissions();
-                        
+
                         Notification::make()
                             ->title('SSH Permissions Fixed')
-                            ->body('All SSH files and directories have been set to the correct permissions.')
+                            ->body(
+                                'All SSH files and directories have been set to the correct permissions.',
+                            )
                             ->success()
                             ->send();
                     } catch (\Exception $e) {
@@ -93,7 +95,7 @@ class ListSshKeys extends ListRecords
                 }),
         ];
     }
-    
+
     public function mount(): void
     {
         // Ensure SSH directory is initialized
@@ -103,7 +105,7 @@ class ListSshKeys extends ListRecords
         } catch (\Exception $e) {
             // Swallow exception - we'll still try to load whatever data we can
         }
-        
+
         parent::mount();
     }
 }

@@ -16,14 +16,79 @@
             </div>
         @endif
 
-        <form wire:submit="runCommand" class="relative">
-            {{ $this->form }}
-
-            <div class="absolute" style="top: 92px; right: 2.5%; width: 20%; max-width: 200px;">
-                <x-filament::button type="submit" color="primary" class="w-full justify-center">
-                    Run Command
-                </x-filament::button>
+        <!-- Manual layout since we're having issues with the form components -->
+        <div class="bg-white rounded-xl shadow p-6 border border-gray-200">
+            <form wire:submit.prevent="runCommand">
+                <!-- Hidden form fields for data -->
+                @foreach($data as $key => $value)
+                    @if(is_bool($value))
+                        <input type="hidden" name="data.{{ $key }}" value="{{ $value ? '1' : '0' }}" wire:model="data.{{ $key }}">
+                    @else
+                        <input type="hidden" name="data.{{ $key }}" value="{{ $value }}" wire:model="data.{{ $key }}">
+                    @endif
+                @endforeach
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Left Column: Command textarea -->
+                    <div>
+                        <label for="command" class="block text-sm font-medium text-gray-700 mb-1">Enter SSH Command(s)</label>
+                        <textarea id="command" name="data[command]" rows="4" wire:model="data.command" required placeholder="Enter the SSH command(s) to execute..." class="w-full rounded-lg shadow-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500"></textarea>
+                    </div>
+                    
+                    <!-- Right Column: SSH Connection and Debug Mode -->
+                    <div class="space-y-6">
+                        <!-- SSH Connection Dropdown -->
+                        <div>
+                            <label for="ssh_config_id" class="block text-sm font-medium text-gray-700">
+                                SSH Connection
+                            </label>
+                            <select id="ssh_config_id" name="data[ssh_config_id]" wire:model="data.ssh_config_id" required class="w-full rounded-lg shadow-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500">
+                                @foreach(\App\Models\SshConfig::all() as $config)
+                                    <option value="{{ $config->id }}" {{ ($data['ssh_config_id'] ?? '') == $config->id ? 'selected' : '' }}>
+                                        {{ $config->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <!-- Controls Container with Debug Toggle and Run Button -->
+                        <div class="flex items-center justify-between">
+                            <!-- Debug Toggle -->
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-700">Enable Debug Mode</span>&nbsp;&nbsp;
+                                <div class="ml-6">
+                                    <button type="button"
+                                        x-data="{ checked: @entangle('data.debug_mode').defer }"
+                                        x-on:click="checked = !checked; $wire.toggleDebugMode()"
+                                        x-bind:class="checked ? 'bg-primary-600' : 'bg-gray-200'"
+                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2">
+                                        <span class="sr-only">Toggle debug mode</span>
+                                        <span aria-hidden="true"
+                                            x-bind:class="checked ? 'translate-x-5' : 'translate-x-0'"
+                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Run Command Button -->
+                            <div>
+                                <x-filament::button type="submit" color="primary">
+                                    Run Command
+                                </x-filament::button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        @if($hasDebugOutput)
+            <div id="debug-output" class="mt-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-2">SSH Debug Information</h3>
+                <div class="p-3 bg-slate-100 text-gray-800 font-mono text-sm rounded border border-slate-300 overflow-x-auto">
+                    <pre>{{ $debugOutput }}</pre>
+                </div>
             </div>
-        </form>
+        @endif
     </div>
 </x-filament-panels::page>

@@ -22,8 +22,8 @@ class SshCommandRunner extends Page
 
     protected static ?string $navigationIcon = 'heroicon-o-command-line';
 
-    protected static ?string $navigationLabel = 'SSH Command Runner';
-    
+    protected static ?string $navigationLabel = 'SSH Commands';
+
     protected static ?string $navigationGroup = 'SSH Management';
 
     protected static ?int $navigationSort = 1;
@@ -31,14 +31,20 @@ class SshCommandRunner extends Page
     protected static string $view = 'filament.pages.ssh-command-runner';
 
     // Form properties
-    public ?array $data = [];
+    public ?array $data = [
+        'debug_mode' => false,
+    ];
 
     // Results property
     public ?string $commandOutput = null;
 
     public ?string $commandError = null;
 
+    public ?string $debugOutput = null;
+
     public bool $hasOutput = false;
+
+    public bool $hasDebugOutput = false;
 
     public function mount(): void
     {
@@ -50,7 +56,35 @@ class SshCommandRunner extends Page
             // Just continue, we'll still try to load whatever connections are in the database
         }
         
-        $this->form->fill();
+        // Initialize form with default values, including debug_mode = false
+        $this->form->fill([
+            'debug_mode' => false, 
+            'ssh_config_id' => SshConfig::where('is_default', true)->first()?->id,
+        ]);
+        
+        // Ensure data array has debug_mode initialized
+        if (!isset($this->data['debug_mode'])) {
+            $this->data['debug_mode'] = false;
+        }
+    }
+    
+    /**
+     * Toggle the debug mode state
+     */
+    public function toggleDebugMode(): void
+    {
+        $currentState = $this->data['debug_mode'] ?? false;
+        $this->data['debug_mode'] = !$currentState;
+        
+        // Reset debug output if turning off debug mode
+        if (!$this->data['debug_mode']) {
+            $this->debugOutput = null;
+            $this->hasDebugOutput = false;
+        } else {
+            // If turning on debug mode, show initial message
+            $this->debugOutput = "Debug mode enabled. Run a command to see detailed information.";
+            $this->hasDebugOutput = true;
+        }
     }
 
     public function form(Form $form): Form
@@ -60,27 +94,48 @@ class SshCommandRunner extends Page
                 // Use a grid with custom column spans
                 Section::make()
                     ->schema([
-                        // First column: Command textarea (75% width) on the left
+                        // First column: Command textarea (50% width) on the left
                         Textarea::make('command')
                             ->label('Enter SSH Command(s)')
                             ->placeholder('Enter the SSH command(s) to execute...')
                             ->required()
                             ->rows(3)
-                            ->columnSpan(3)
+                            ->columnSpan([
+                                'xl' => 6,
+                                'lg' => 6,
+                                'md' => 6,
+                                'sm' => 12, // Full width on small screens
+                            ])
                             ->autosize(true),
 
-                        // Second column: SSH Connection dropdown (25% width) on the right
-                        Select::make('ssh_config_id')
-                            ->label('SSH Connection')
-                            ->options(SshConfig::all()->pluck('name', 'id'))
-                            ->required()
-                            ->searchable()
-                            ->columnSpan(1)
-                            ->default(function () {
-                                return SshConfig::where('is_default', true)->first()?->id;
-                            }),
+                        // Right column container for SSH Connection and Debug toggle
+                        \Filament\Forms\Components\Grid::make(1)
+                            ->schema([
+                                // SSH Connection dropdown
+                                Select::make('ssh_config_id')
+                                    ->label('SSH Connection')
+                                    ->options(SshConfig::all()->pluck('name', 'id'))
+                                    ->required()
+                                    ->searchable()
+                                    ->default(function () {
+                                        return SshConfig::where('is_default', true)->first()?->id;
+                                    }),
+
+                                // We're using a manual toggle in the view, so this is no longer needed
+                                \Filament\Forms\Components\Grid::make()
+                                    ->schema([
+                                        // Empty grid for spacing
+                                    ])
+                                    ->columns(1),
+                            ])
+                            ->columnSpan([
+                                'xl' => 6,
+                                'lg' => 6,
+                                'md' => 6,
+                                'sm' => 12, // Full width on small screens
+                            ]),
                     ])
-                    ->columns(4) // Using 4 columns to get the 25%/75% split
+                    ->columns(12) // Using 12 columns for more flexible responsive layout
                     ->collapsible(false)
                     ->compact()
                     ->hiddenLabel(),
@@ -90,16 +145,16 @@ class SshCommandRunner extends Page
 
     public function runCommand(): void
     {
+        // Save the debug state before getting form data
+        $debugWasEnabled = $this->data['debug_mode'] ?? false;
+        
         $data = $this->form->getState();
 
         // Get SSH configuration
         $sshConfig = SshConfig::find($data['ssh_config_id']);
 
-        if (! $sshConfig) {
-            Notification::make()
-                ->title('SSH connection not found')
-                ->danger()
-                ->send();
+        if (!$sshConfig) {
+            Notification::make()->title('SSH connection not found')->danger()->send();
 
             return;
         }
@@ -115,14 +170,24 @@ class SshCommandRunner extends Page
             if (preg_match('/^sx\s+(\S+)\s+(.+)$/i', $command, $matches)) {
                 // For sx function calls, execute the command part directly with bash -c
                 $actualCommand = $matches[2];
-                $process = $ssh->execute("bash -ci '" . str_replace("'", "'\\''", $actualCommand) . "'");
+                $process = $ssh->execute(
+                    "bash -ci '" . str_replace("'", "'\\''", $actualCommand) . "'",
+                );
             }
             // Check if the command uses bash -ci pattern (frequently used in shell scripts)
-            elseif (preg_match('/bash\s+-ci\s+[\'"](.+?)[\'"]/', $command, $matches) ||
-                   preg_match('/ssh\s+\S+\s+(?:-\w+\s+)*(?:-t\s+)?[\'"]?bash\s+-ci\s+[\'"](.+?)[\'"]/', $command, $matches)) {
+            elseif (
+                preg_match('/bash\s+-ci\s+[\'"](.+?)[\'"]/', $command, $matches) ||
+                preg_match(
+                    '/ssh\s+\S+\s+(?:-\w+\s+)*(?:-t\s+)?[\'"]?bash\s+-ci\s+[\'"](.+?)[\'"]/',
+                    $command,
+                    $matches,
+                )
+            ) {
                 // Extract the actual command and run it with bash -c
                 $actualCommand = $matches[1];
-                $process = $ssh->execute("bash -ci '" . str_replace("'", "'\\''", $actualCommand) . "'");
+                $process = $ssh->execute(
+                    "bash -ci '" . str_replace("'", "'\\''", $actualCommand) . "'",
+                );
             }
             // Check if the command contains a reference to $_HOST which needs to be replaced
             elseif (strpos($command, '$_HOST') !== false || strpos($command, 'ssh ') === 0) {
@@ -132,9 +197,17 @@ class SshCommandRunner extends Page
                 $processed = preg_replace('/^ssh\s+\S+\s+(?:-\w+\s+)*/', '', $processed);
 
                 // If the remaining command has -t "bash -ci '...'", extract the actual command
-                if (preg_match('/-t\s+[\'"]bash\s+-ci\s+[\'"](.+?)[\'"][\'"]/', $processed, $matches)) {
+                if (
+                    preg_match(
+                        '/-t\s+[\'"]bash\s+-ci\s+[\'"](.+?)[\'"][\'"]/',
+                        $processed,
+                        $matches,
+                    )
+                ) {
                     $processed = $matches[1];
-                    $process = $ssh->execute("bash -ci '" . str_replace("'", "'\\''", $processed) . "'");
+                    $process = $ssh->execute(
+                        "bash -ci '" . str_replace("'", "'\\''", $processed) . "'",
+                    );
                 } else {
                     // Execute the processed command
                     $process = $ssh->execute($processed);
@@ -147,10 +220,47 @@ class SshCommandRunner extends Page
 
             // Store output
             $this->commandOutput = $process->getOutput();
+            $errorOutput = $process->getErrorOutput();
+
+            // Get debug mode state from the form data
+            $debugMode = isset($data['debug_mode']) && filter_var($data['debug_mode'], FILTER_VALIDATE_BOOLEAN);
+            
+            // If debug mode is enabled (either before or now), show debug output
+            if ($debugWasEnabled || $debugMode) {
+                // Build debug output
+                $debugOutput = "==== SSH CONNECTION ====\n";
+                $debugOutput .= "Host: " . $sshConfig->host . "\n";
+                $debugOutput .= "Username: " . $sshConfig->username . "\n";
+                $debugOutput .= "Port: " . $sshConfig->port . "\n";
+                
+                $debugOutput .= "\n==== COMMAND EXECUTION ====\n";
+                $debugOutput .= "Command: " . $command;
+
+                // Add process details
+                $debugOutput .= "\n\nProcess Information:";
+                $debugOutput .= "\n- Exit Code: " . $process->getExitCode();
+
+                // Include raw error output in debug
+                if (!empty($errorOutput)) {
+                    $debugOutput .= "\n\nRaw Error Output:\n" . $errorOutput;
+                }
+
+                // Store executed SSH command string (if available)
+                if (method_exists($ssh, 'getExecuteCommand')) {
+                    $debugOutput .= "\n\nExecuted command: " . $ssh->getExecuteCommand($command);
+                }
+                
+                // Always set the debug output and flag on if it was previously enabled
+                $this->debugOutput = $debugOutput;
+                $this->hasDebugOutput = true;
+            } else {
+                // If debug mode is off (both before and now), reset debug output and flag
+                $this->debugOutput = null;
+                $this->hasDebugOutput = false;
+            }
 
             // Filter out known hosts messages and other bash/ioctl noise from both outputs
             $this->commandOutput = $this->filterKnownHostsMessages($this->commandOutput);
-            $errorOutput = $process->getErrorOutput();
             $errorOutput = $this->filterKnownHostsMessages($errorOutput);
 
             $this->commandError = $errorOutput;
@@ -159,10 +269,7 @@ class SshCommandRunner extends Page
             // Consider command successful if we have output, even if exit code is non-zero
             // This is more user-friendly since many SSH commands can return non-zero but still produce useful output
             if ($this->commandOutput || !$this->commandError) {
-                Notification::make()
-                    ->title('Command executed successfully')
-                    ->success()
-                    ->send();
+                Notification::make()->title('Command executed successfully')->success()->send();
             } else {
                 Notification::make()
                     ->title('Command execution failed')
@@ -171,8 +278,15 @@ class SshCommandRunner extends Page
                     ->send();
             }
         } catch (\Exception $e) {
+            // Handle exceptions and preserve debug info
             $this->commandError = $e->getMessage();
             $this->hasOutput = true;
+            
+            // Always show debug information when there's an error if debug mode is on
+            if ($debugWasEnabled) {
+                $this->debugOutput = "ERROR ENCOUNTERED: " . $e->getMessage();
+                $this->hasDebugOutput = true;
+            }
 
             Notification::make()
                 ->title('SSH connection failed')
@@ -188,23 +302,58 @@ class SshCommandRunner extends Page
     private function createSshConnection(SshConfig $sshConfig): Ssh
     {
         $ssh = Ssh::create($sshConfig->username, $sshConfig->host, $sshConfig->port);
+        $debugInfo = [];
+
+        // Add debug information
+        $debugInfo[] = 'SSH Connection Details:';
+        $debugInfo[] = "- Host: {$sshConfig->host}";
+        $debugInfo[] = "- Port: {$sshConfig->port}";
+        $debugInfo[] = "- Username: {$sshConfig->username}";
 
         // Use private key if available, otherwise use password
-        if (! empty($sshConfig->private_key_path)) {
+        if (!empty($sshConfig->private_key_path)) {
             $ssh->usePrivateKey($sshConfig->private_key_path);
-        } elseif (! empty($sshConfig->password)) {
+            $debugInfo[] = '- Authentication: Private Key';
+            $debugInfo[] = "- Key Path: {$sshConfig->private_key_path}";
+        } elseif (!empty($sshConfig->password)) {
             $ssh->usePassword($sshConfig->password);
+            $debugInfo[] = '- Authentication: Password';
+        } else {
+            $debugInfo[] = '- Authentication: None specified (using default system SSH keys)';
         }
 
+        $debugInfo[] = "\nSSH Options:";
+
         // Disable strict host key checking and set additional options to suppress known hosts warnings
-        // In production, this should be configurable
         $ssh->disableStrictHostKeyChecking();
-        $ssh->addExtraOption('-o LogLevel=ERROR');
+        $debugInfo[] = '- StrictHostKeyChecking=no';
+
+        // Set log level based on debug mode
+        $data = $this->form->getState();
+        $debugMode = $data['debug_mode'] ?? false;
+        $debugMode = filter_var($debugMode, FILTER_VALIDATE_BOOLEAN);
+
+        if ($debugMode) {
+            $ssh->addExtraOption('-o LogLevel=DEBUG3');
+            $ssh->addExtraOption('-v'); // Verbose mode
+            $debugInfo[] = '- LogLevel=DEBUG3';
+            $debugInfo[] = '- Verbose Mode: Enabled';
+        } else {
+            $ssh->addExtraOption('-o LogLevel=ERROR');
+            $debugInfo[] = '- LogLevel=ERROR';
+        }
+
         $ssh->addExtraOption('-o UserKnownHostsFile=/dev/null');
+        $debugInfo[] = '- UserKnownHostsFile=/dev/null';
 
         // Specific options to avoid terminal control issues
         $ssh->addExtraOption('-o RequestTTY=no'); // More reliable than -T in some cases
         $ssh->addExtraOption('-o BatchMode=yes'); // Avoid password prompts if keys aren't set up
+        $debugInfo[] = '- RequestTTY=no';
+        $debugInfo[] = '- BatchMode=yes';
+
+        // We'll let the toggleDebugMode and runCommand methods handle the debug output
+        // We're not modifying debug output here to avoid duplication
 
         return $ssh;
     }

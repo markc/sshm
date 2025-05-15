@@ -21,22 +21,29 @@ new #[Layout('components.layouts.auth')] class extends Component {
     {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                'unique:' . User::class,
+            ],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
-
         $validated['password'] = Hash::make($validated['password']);
-
         event(new Registered(($user = User::create($validated))));
-
         Auth::login($user);
-
         $this->redirectIntended(route('dashboard', absolute: false), navigate: true);
     }
-}; ?>
+};
+?>
 
 <div class="flex flex-col gap-6">
-    <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
+    <x-auth-header
+        :title="__('Create an account')"
+        :description="__('Enter your details below to create your account')"
+    />
 
     <!-- Session Status -->
     <x-auth-session-status class="text-center" :status="session('status')" />
