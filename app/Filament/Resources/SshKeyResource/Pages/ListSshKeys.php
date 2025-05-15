@@ -21,7 +21,7 @@ class ListSshKeys extends ListRecords
                 ->label('Sync SSH Keys')
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
-                    $sshManager = new SshManagerService();
+                    $sshManager = new SshManagerService;
 
                     try {
                         // Initialize SSH directory if it doesn't exist
@@ -50,7 +50,7 @@ class ListSshKeys extends ListRecords
                 ->label('Initialize SSH Dir')
                 ->icon('heroicon-o-folder-plus')
                 ->action(function () {
-                    $sshManager = new SshManagerService();
+                    $sshManager = new SshManagerService;
 
                     try {
                         $result = $sshManager->initializeSshDirectory();
@@ -73,7 +73,7 @@ class ListSshKeys extends ListRecords
                 ->label('Fix SSH Permissions')
                 ->icon('heroicon-o-shield-check')
                 ->action(function () {
-                    $sshManager = new SshManagerService();
+                    $sshManager = new SshManagerService;
 
                     try {
                         $sshManager->setPermissions();
@@ -99,7 +99,7 @@ class ListSshKeys extends ListRecords
     public function mount(): void
     {
         // Ensure SSH directory is initialized
-        $sshManager = new SshManagerService();
+        $sshManager = new SshManagerService;
         try {
             $sshManager->initializeSshDirectory();
         } catch (\Exception $e) {

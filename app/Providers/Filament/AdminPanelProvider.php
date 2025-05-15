@@ -6,10 +6,6 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\MenuItem;
-use Filament\Navigation\NavigationBuilder;
-use Filament\Navigation\NavigationItem;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -42,7 +38,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 // Move the markdown widget into the main content area instead of the widgets grid
-                Widgets\AccountWidget::class, 
+                Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
             // Enable collapsible sidebar and standard profile

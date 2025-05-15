@@ -10,8 +10,8 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Actions\Action as TableAction;
+use Filament\Tables\Table;
 
 class SshConfigResource extends Resource
 {
@@ -48,7 +48,7 @@ class SshConfigResource extends Resource
                     Forms\Components\Select::make('private_key_path')
                         ->label('SSH Key')
                         ->options(function () {
-                            $sshManager = new SshManagerService();
+                            $sshManager = new SshManagerService;
                             $sshDir = $sshManager->getSshDir();
 
                             // Get all SSH keys from the database
@@ -56,7 +56,7 @@ class SshConfigResource extends Resource
 
                             $options = [];
                             foreach ($keys as $key) {
-                                $options[$key->path] = $key->name . ' (' . $key->comment . ')';
+                                $options[$key->path] = $key->name.' ('.$key->comment.')';
                             }
 
                             return $options;
@@ -118,7 +118,7 @@ class SshConfigResource extends Resource
                     )
                     ->action(function (SshConfig $record): void {
                         try {
-                            $sshManager = new SshManagerService();
+                            $sshManager = new SshManagerService;
 
                             // Ensure SSH directory is initialized
                             $sshManager->initializeSshDirectory();
@@ -164,9 +164,9 @@ class SshConfigResource extends Resource
                             );
 
                             // Use private key if available, otherwise use password
-                            if (!empty($record->private_key_path)) {
+                            if (! empty($record->private_key_path)) {
                                 $ssh->usePrivateKey($record->private_key_path);
-                            } elseif (!empty($record->password)) {
+                            } elseif (! empty($record->password)) {
                                 $ssh->usePassword($record->password);
                             }
 
@@ -179,12 +179,12 @@ class SshConfigResource extends Resource
                             if ($process->isSuccessful()) {
                                 \Filament\Notifications\Notification::make()
                                     ->title('Connection successful')
-                                    ->body('Successfully connected to ' . $record->host)
+                                    ->body('Successfully connected to '.$record->host)
                                     ->success()
                                     ->send();
                             } else {
                                 throw new \Exception(
-                                    'Connection test failed: ' . $process->getErrorOutput(),
+                                    'Connection test failed: '.$process->getErrorOutput(),
                                 );
                             }
                         } catch (\Exception $e) {
@@ -212,8 +212,8 @@ class SshConfigResource extends Resource
     public static function getRelations(): array
     {
         return [
-                //
-            ];
+            //
+        ];
     }
 
     public static function getPages(): array

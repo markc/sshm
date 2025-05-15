@@ -38,7 +38,7 @@ class SshUtilities extends Page
                 ->icon('heroicon-o-folder-plus')
                 ->color('success')
                 ->action(function () {
-                    $sshManager = new SshManagerService();
+                    $sshManager = new SshManagerService;
 
                     try {
                         $result = $sshManager->initializeSshDirectory();
@@ -64,7 +64,7 @@ class SshUtilities extends Page
                 ->icon('heroicon-o-shield-check')
                 ->color('warning')
                 ->action(function () {
-                    $sshManager = new SshManagerService();
+                    $sshManager = new SshManagerService;
 
                     try {
                         $sshManager->setPermissions();
@@ -91,7 +91,7 @@ class SshUtilities extends Page
                 ->label('Start SSH Server')
                 ->icon('heroicon-o-play')
                 ->color('success')
-                ->visible(fn() => $this->sshStatus === 'inactive')
+                ->visible(fn () => $this->sshStatus === 'inactive')
                 ->action(function () {
                     try {
                         $process = Process::timeout(60)->run(
@@ -108,7 +108,7 @@ class SshUtilities extends Page
                             $this->checkSshStatus();
                         } else {
                             throw new \Exception(
-                                'Failed to start SSH server: ' . $process->errorOutput(),
+                                'Failed to start SSH server: '.$process->errorOutput(),
                             );
                         }
                     } catch (\Exception $e) {
@@ -124,7 +124,7 @@ class SshUtilities extends Page
                 ->label('Stop SSH Server')
                 ->icon('heroicon-o-stop')
                 ->color('danger')
-                ->visible(fn() => $this->sshStatus === 'active')
+                ->visible(fn () => $this->sshStatus === 'active')
                 ->action(function () {
                     try {
                         $process = Process::timeout(60)->run(
@@ -141,7 +141,7 @@ class SshUtilities extends Page
                             $this->checkSshStatus();
                         } else {
                             throw new \Exception(
-                                'Failed to stop SSH server: ' . $process->errorOutput(),
+                                'Failed to stop SSH server: '.$process->errorOutput(),
                             );
                         }
                     } catch (\Exception $e) {
@@ -178,13 +178,13 @@ class SshUtilities extends Page
     private function getSshDirInfo(): void
     {
         try {
-            $sshManager = new SshManagerService();
+            $sshManager = new SshManagerService;
             $sshDir = $sshManager->getSshDir();
 
             $dirInfo = [];
 
             // Check if directory exists
-            if (!is_dir($sshDir)) {
+            if (! is_dir($sshDir)) {
                 $dirInfo[] = 'SSH directory does not exist';
             } else {
                 $dirInfo[] = "SSH directory: {$sshDir}";
@@ -214,12 +214,12 @@ class SshUtilities extends Page
 
                 // Check SSH keys
                 $keyFiles = glob("{$sshDir}/*.pub");
-                $dirInfo[] = 'SSH keys: ' . count($keyFiles);
+                $dirInfo[] = 'SSH keys: '.count($keyFiles);
             }
 
             $this->sshDirInfo = implode("\n", $dirInfo);
         } catch (\Exception $e) {
-            $this->sshDirInfo = 'Error retrieving SSH directory information: ' . $e->getMessage();
+            $this->sshDirInfo = 'Error retrieving SSH directory information: '.$e->getMessage();
         }
     }
 }

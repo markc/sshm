@@ -8,10 +8,8 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Actions\Action as TableAction;
-use Illuminate\Support\Facades\Process;
-use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Table;
 
 class SshKeyResource extends Resource
 {
@@ -47,9 +45,9 @@ class SshKeyResource extends Resource
                     Forms\Components\TextInput::make('password')
                         ->label('Password')
                         ->password()
-                        ->hidden(fn(Forms\Get $get) => !$get('has_password'))
+                        ->hidden(fn (Forms\Get $get) => ! $get('has_password'))
                         ->dehydrated(false)
-                        ->visible(fn(string $operation): bool => $operation === 'create'),
+                        ->visible(fn (string $operation): bool => $operation === 'create'),
                 ])
                 ->columns(2),
 
@@ -58,27 +56,27 @@ class SshKeyResource extends Resource
                     Forms\Components\TextInput::make('algorithm')
                         ->label('Algorithm')
                         ->disabled()
-                        ->visible(fn(string $operation): bool => $operation === 'edit'),
+                        ->visible(fn (string $operation): bool => $operation === 'edit'),
 
                     Forms\Components\TextInput::make('bits')
                         ->label('Bits')
                         ->disabled()
-                        ->visible(fn(string $operation): bool => $operation === 'edit'),
+                        ->visible(fn (string $operation): bool => $operation === 'edit'),
 
                     Forms\Components\TextInput::make('fingerprint')
                         ->label('Fingerprint')
                         ->disabled()
                         ->columnSpanFull()
-                        ->visible(fn(string $operation): bool => $operation === 'edit'),
+                        ->visible(fn (string $operation): bool => $operation === 'edit'),
 
                     Forms\Components\TextInput::make('path')
                         ->label('Path')
                         ->disabled()
                         ->columnSpanFull()
-                        ->visible(fn(string $operation): bool => $operation === 'edit'),
+                        ->visible(fn (string $operation): bool => $operation === 'edit'),
                 ])
                 ->columns(2)
-                ->visible(fn(string $operation): bool => $operation === 'edit'),
+                ->visible(fn (string $operation): bool => $operation === 'edit'),
         ]);
     }
 
@@ -122,12 +120,12 @@ class SshKeyResource extends Resource
                     })
                     ->modalContent(function (SshKey $record) {
                         // Get the public key content
-                        $path = $record->path . '.pub';
+                        $path = $record->path.'.pub';
                         $content = '';
 
                         if (file_exists($path)) {
                             $content =
-                                '<pre>' . htmlspecialchars(file_get_contents($path)) . '</pre>';
+                                '<pre>'.htmlspecialchars(file_get_contents($path)).'</pre>';
                         } else {
                             $content = "<div class='text-danger'>Public key file not found.</div>";
                         }
@@ -155,9 +153,9 @@ class SshKeyResource extends Resource
                     ])
                     ->action(function (SshKey $record, array $data): void {
                         $sshConfig = \App\Models\SshConfig::find($data['ssh_config_id']);
-                        $publicKeyPath = $record->path . '.pub';
+                        $publicKeyPath = $record->path.'.pub';
 
-                        if (!file_exists($publicKeyPath)) {
+                        if (! file_exists($publicKeyPath)) {
                             throw new \Exception('Public key file not found.');
                         }
 
@@ -171,9 +169,9 @@ class SshKeyResource extends Resource
                         );
 
                         // Use private key if available, otherwise use password
-                        if (!empty($sshConfig->private_key_path)) {
+                        if (! empty($sshConfig->private_key_path)) {
                             $ssh->usePrivateKey($sshConfig->private_key_path);
-                        } elseif (!empty($sshConfig->password)) {
+                        } elseif (! empty($sshConfig->password)) {
                             $ssh->usePassword($sshConfig->password);
                         }
 
@@ -191,7 +189,7 @@ class SshKeyResource extends Resource
                                 ->send();
                         } else {
                             throw new \Exception(
-                                'Failed to transfer the key: ' . $process->getErrorOutput(),
+                                'Failed to transfer the key: '.$process->getErrorOutput(),
                             );
                         }
                     }),
@@ -204,7 +202,7 @@ class SshKeyResource extends Resource
                     ->action(function (SshKey $record): void {
                         // Delete the actual key files
                         $keyPath = $record->path;
-                        $pubKeyPath = $keyPath . '.pub';
+                        $pubKeyPath = $keyPath.'.pub';
 
                         if (file_exists($keyPath)) {
                             unlink($keyPath);
@@ -236,7 +234,7 @@ class SshKeyResource extends Resource
                             foreach ($records as $record) {
                                 // Delete the actual key files
                                 $keyPath = $record->path;
-                                $pubKeyPath = $keyPath . '.pub';
+                                $pubKeyPath = $keyPath.'.pub';
 
                                 if (file_exists($keyPath)) {
                                     unlink($keyPath);
@@ -262,8 +260,8 @@ class SshKeyResource extends Resource
     public static function getRelations(): array
     {
         return [
-                //
-            ];
+            //
+        ];
     }
 
     public static function getPages(): array

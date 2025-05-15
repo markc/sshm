@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\SshKey;
 use App\Services\SshManagerService;
 use Illuminate\Database\Seeder;
 
@@ -13,13 +12,14 @@ class SshKeySeeder extends Seeder
      */
     public function run(): void
     {
-        $sshManager = new SshManagerService();
+        $sshManager = new SshManagerService;
 
         // Initialize the SSH directory structure if it doesn't exist
         try {
             $sshManager->initializeSshDirectory();
         } catch (\Exception $e) {
-            $this->command->error('Failed to initialize SSH directory: ' . $e->getMessage());
+            $this->command->error('Failed to initialize SSH directory: '.$e->getMessage());
+
             return;
         }
 
@@ -30,7 +30,7 @@ class SshKeySeeder extends Seeder
                 "SSH keys synchronized: {$result['added']} added, {$result['updated']} updated, {$result['removed']} removed",
             );
         } catch (\Exception $e) {
-            $this->command->error('Failed to sync SSH keys: ' . $e->getMessage());
+            $this->command->error('Failed to sync SSH keys: '.$e->getMessage());
         }
     }
 }

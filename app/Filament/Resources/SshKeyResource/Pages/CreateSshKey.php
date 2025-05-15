@@ -4,7 +4,6 @@ namespace App\Filament\Resources\SshKeyResource\Pages;
 
 use App\Filament\Resources\SshKeyResource;
 use App\Services\SshManagerService;
-use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +16,7 @@ class CreateSshKey extends CreateRecord
     {
         try {
             // Initialize SSH directory if it doesn't exist
-            $sshManager = new SshManagerService();
+            $sshManager = new SshManagerService;
             $sshManager->initializeSshDirectory();
 
             // Create the SSH key

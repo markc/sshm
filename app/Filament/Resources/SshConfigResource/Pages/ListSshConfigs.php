@@ -21,7 +21,7 @@ class ListSshConfigs extends ListRecords
                 ->label('Sync Config Files')
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
-                    $sshManager = new SshManagerService();
+                    $sshManager = new SshManagerService;
 
                     try {
                         // Initialize SSH directory if it doesn't exist
@@ -51,7 +51,7 @@ class ListSshConfigs extends ListRecords
     public function mount(): void
     {
         // Ensure SSH directory is initialized
-        $sshManager = new SshManagerService();
+        $sshManager = new SshManagerService;
         try {
             $sshManager->initializeSshDirectory();
         } catch (\Exception $e) {

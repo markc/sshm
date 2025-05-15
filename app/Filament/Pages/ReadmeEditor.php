@@ -16,16 +16,19 @@ class ReadmeEditor extends Page
 
     // Set navigation properties
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+
     protected static ?string $navigationLabel = 'README Editor';
+
     protected static ?string $title = 'README Editor';
+
     protected static ?int $navigationSort = -1; // Make it appear after Dashboard but before other items
-    
+
     // Specify the view
     protected static string $view = 'filament.pages.readme-editor';
-    
+
     // Form data
     public array $data = [];
-    
+
     /**
      * Called when component is initialized
      */
@@ -35,7 +38,7 @@ class ReadmeEditor extends Page
             'markdownContent' => $this->getReadmeFileContents(),
         ]);
     }
-    
+
     /**
      * Configure the form with Filament's native components
      */
@@ -51,8 +54,8 @@ class ReadmeEditor extends Page
                             ->columnSpanFull()
                             ->rows(20)
                             ->extraInputAttributes([
-                                'class' => 'font-mono', 
-                                'style' => 'white-space: pre; font-family: monospace;'
+                                'class' => 'font-mono',
+                                'style' => 'white-space: pre; font-family: monospace;',
                             ])
                             ->helperText('Changes are not saved until you click the Save Changes button.'),
                     ])
@@ -64,47 +67,47 @@ class ReadmeEditor extends Page
                             ->icon('heroicon-o-document-check')
                             ->action('save')
                             ->size('sm'),
-                            
+
                         \Filament\Forms\Components\Actions\Action::make('push')
                             ->label('Push Changes')
                             ->color('success')
                             ->icon('heroicon-o-arrow-up-tray')
                             ->action('pushToGithub')
-                            ->size('sm')
+                            ->size('sm'),
                     ])
-                    ->collapsible(false)
+                    ->collapsible(false),
             ])
             ->statePath('data');
     }
-    
+
     /**
      * Get raw README.md content
      */
     private function getReadmeFileContents(): string
     {
         $path = base_path('README.md');
-        
+
         if (File::exists($path)) {
             return File::get($path);
         }
-        
-        return '# Project Documentation' . PHP_EOL . PHP_EOL . 'Add your documentation here.';
+
+        return '# Project Documentation'.PHP_EOL.PHP_EOL.'Add your documentation here.';
     }
-    
+
     /**
      * Save the README.md content
      */
     public function save(): void
     {
         $data = $this->form->getState();
-        
+
         File::put(base_path('README.md'), $data['markdownContent']);
-        
+
         Notification::make()
             ->title('README.md updated successfully')
             ->success()
             ->send();
-        
+
         // Refresh the form to update the preview
         $this->form->fill([
             'markdownContent' => $this->getReadmeFileContents(),
@@ -119,20 +122,20 @@ class ReadmeEditor extends Page
         try {
             // First save any pending changes to ensure everything is committed
             $this->save();
-            
+
             // Generate a descriptive commit message
-            $commitMessage = "Update README documentation: " . date('Y-m-d H:i:s');
-            
+            $commitMessage = 'Update README documentation: '.date('Y-m-d H:i:s');
+
             // Execute git commands
             $basePath = base_path();
             $command = "cd {$basePath} && git add . && git commit -a -m \"{$commitMessage}\" && git push 2>&1";
             $output = shell_exec($command);
-            
+
             // Check if the execution was successful
             if (strpos($output, 'error:') !== false || strpos($output, 'fatal:') !== false) {
-                throw new \Exception("Git error: " . $output);
+                throw new \Exception('Git error: '.$output);
             }
-            
+
             // Send a success notification
             Notification::make()
                 ->title('Changes pushed to GitHub')
@@ -143,7 +146,7 @@ class ReadmeEditor extends Page
             // Handle any errors
             Notification::make()
                 ->title('Error pushing to GitHub')
-                ->body('An error occurred: ' . $e->getMessage())
+                ->body('An error occurred: '.$e->getMessage())
                 ->danger()
                 ->send();
         }
@@ -155,20 +158,20 @@ class ReadmeEditor extends Page
     public function getReadmeContent(): string
     {
         $path = base_path('README.md');
-        
-        if (!File::exists($path)) {
+
+        if (! File::exists($path)) {
             return 'README.md not found.';
         }
 
         $markdown = File::get($path);
-        
+
         // Use the simplified GithubFlavoredMarkdownConverter
         $converter = new GithubFlavoredMarkdownConverter([
             'html_input' => 'allow',
             'allow_unsafe_links' => true,
             'max_nesting_level' => 100,
         ]);
-        
+
         // Convert the markdown to HTML
         return $converter->convert($markdown)->getContent();
     }

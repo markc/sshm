@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\SshKey;
 use App\Models\SshConfig;
-use Illuminate\Support\Facades\Process;
+use App\Models\SshKey;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 
 class SshManagerService
 {
@@ -14,7 +14,7 @@ class SshManagerService
      */
     public function getHomeDir(): string
     {
-        return env('HOME_DIR', $_SERVER['HOME'] ?? '/home/' . get_current_user());
+        return env('HOME_DIR', $_SERVER['HOME'] ?? '/home/'.get_current_user());
     }
 
     /**
@@ -22,7 +22,7 @@ class SshManagerService
      */
     public function getSshDir(): string
     {
-        return $this->getHomeDir() . '/.ssh';
+        return $this->getHomeDir().'/.ssh';
     }
 
     /**
@@ -31,31 +31,31 @@ class SshManagerService
     public function initializeSshDirectory(): array
     {
         $sshDir = $this->getSshDir();
-        $configDDir = $sshDir . '/config.d';
+        $configDDir = $sshDir.'/config.d';
         $result = [];
 
         // Create .ssh directory if it doesn't exist
-        if (!is_dir($sshDir)) {
+        if (! is_dir($sshDir)) {
             mkdir($sshDir, 0700, true);
             $result[] = "Created {$sshDir}";
         }
 
         // Create authorized_keys file if it doesn't exist
-        if (!file_exists($sshDir . '/authorized_keys')) {
-            touch($sshDir . '/authorized_keys');
-            chmod($sshDir . '/authorized_keys', 0600);
+        if (! file_exists($sshDir.'/authorized_keys')) {
+            touch($sshDir.'/authorized_keys');
+            chmod($sshDir.'/authorized_keys', 0600);
             $result[] = "Created {$sshDir}/authorized_keys";
         }
 
         // Create config.d directory if it doesn't exist
-        if (!is_dir($configDDir)) {
+        if (! is_dir($configDDir)) {
             mkdir($configDDir, 0700, true);
             $result[] = "Created {$configDDir}";
         }
 
         // Create the main config file if it doesn't exist
-        if (!file_exists($sshDir . '/config')) {
-            $configContent = '# Created by SSHM on ' . date('Ymd') . "\n";
+        if (! file_exists($sshDir.'/config')) {
+            $configContent = '# Created by SSHM on '.date('Ymd')."\n";
             $configContent .=
                 "Ciphers aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com\n\n";
             $configContent .= "Include ~/.ssh/config.d/*\n\n";
@@ -66,8 +66,8 @@ class SshManagerService
             $configContent .= "  AddKeysToAgent yes\n";
             $configContent .= "  IdentitiesOnly yes\n";
 
-            file_put_contents($sshDir . '/config', $configContent);
-            chmod($sshDir . '/config', 0600);
+            file_put_contents($sshDir.'/config', $configContent);
+            chmod($sshDir.'/config', 0600);
             $result[] = "Created {$sshDir}/config";
         }
 
@@ -86,22 +86,22 @@ class SshManagerService
         $sshDir = $this->getSshDir();
 
         // Find all directories and set 700 permissions
-        $directories = Process::run('find ' . escapeshellarg($sshDir) . ' -type d');
+        $directories = Process::run('find '.escapeshellarg($sshDir).' -type d');
         if ($directories->successful()) {
             $dirList = explode("\n", trim($directories->output()));
             foreach ($dirList as $dir) {
-                if (!empty($dir)) {
+                if (! empty($dir)) {
                     chmod($dir, 0700);
                 }
             }
         }
 
         // Find all files and set 600 permissions
-        $files = Process::run('find ' . escapeshellarg($sshDir) . ' -type f');
+        $files = Process::run('find '.escapeshellarg($sshDir).' -type f');
         if ($files->successful()) {
             $fileList = explode("\n", trim($files->output()));
             foreach ($fileList as $file) {
-                if (!empty($file)) {
+                if (! empty($file)) {
                     chmod($file, 0600);
                 }
             }
@@ -139,6 +139,7 @@ class SshManagerService
         // Set permissions
         if ($result !== false) {
             chmod($configPath, 0600);
+
             return true;
         }
 
@@ -228,19 +229,19 @@ class SshManagerService
         // Use default comment if empty
         if (empty($comment)) {
             $hostname = Process::run('hostname')->output();
-            $comment = trim($hostname) . '@lan';
+            $comment = trim($hostname).'@lan';
         }
 
         // Build the ssh-keygen command
         $command =
-            'ssh-keygen -o -a 100 -t ed25519 -f ' .
-            escapeshellarg($keyPath) .
-            ' -C ' .
+            'ssh-keygen -o -a 100 -t ed25519 -f '.
+            escapeshellarg($keyPath).
+            ' -C '.
             escapeshellarg($comment);
 
         // Add password if provided
-        if (!empty($password)) {
-            $command .= ' -N ' . escapeshellarg($password);
+        if (! empty($password)) {
+            $command .= ' -N '.escapeshellarg($password);
         } else {
             $command .= " -N ''";
         }
@@ -248,8 +249,8 @@ class SshManagerService
         // Execute the command
         $process = Process::run($command);
 
-        if (!$process->successful()) {
-            throw new \Exception('Failed to create SSH key: ' . $process->errorOutput());
+        if (! $process->successful()) {
+            throw new \Exception('Failed to create SSH key: '.$process->errorOutput());
         }
 
         // Get key details
@@ -265,7 +266,7 @@ class SshManagerService
         $keyPath = "{$sshDir}/{$name}";
         $pubKeyPath = "{$keyPath}.pub";
 
-        if (!file_exists($pubKeyPath)) {
+        if (! file_exists($pubKeyPath)) {
             throw new \Exception("Public key file '{$pubKeyPath}' not found");
         }
 
@@ -273,10 +274,10 @@ class SshManagerService
         $publicKey = file_get_contents($pubKeyPath);
 
         // Get key info using ssh-keygen
-        $process = Process::run('ssh-keygen -lf ' . escapeshellarg($pubKeyPath));
+        $process = Process::run('ssh-keygen -lf '.escapeshellarg($pubKeyPath));
 
-        if (!$process->successful()) {
-            throw new \Exception('Failed to get key details: ' . $process->errorOutput());
+        if (! $process->successful()) {
+            throw new \Exception('Failed to get key details: '.$process->errorOutput());
         }
 
         $keyInfoOutput = trim($process->output());
@@ -308,7 +309,7 @@ class SshManagerService
      */
     private function keyHasPassword(string $keyPath): bool
     {
-        if (!file_exists($keyPath)) {
+        if (! file_exists($keyPath)) {
             return false;
         }
 
@@ -375,13 +376,13 @@ class SshManagerService
         $sshDir = $this->getSshDir();
         $pubKeyPath = "{$sshDir}/{$keyName}.pub";
 
-        if (!file_exists($pubKeyPath)) {
+        if (! file_exists($pubKeyPath)) {
             throw new \Exception("Public key file '{$pubKeyPath}' not found");
         }
 
         $sshConfig = SshConfig::where('name', $serverName)->first();
 
-        if (!$sshConfig) {
+        if (! $sshConfig) {
             throw new \Exception("SSH server configuration '{$serverName}' not found");
         }
 
@@ -392,9 +393,9 @@ class SshManagerService
         $ssh = \Spatie\Ssh\Ssh::create($sshConfig->username, $sshConfig->host, $sshConfig->port);
 
         // Use private key if available, otherwise use password
-        if (!empty($sshConfig->private_key_path)) {
+        if (! empty($sshConfig->private_key_path)) {
             $ssh->usePrivateKey($sshConfig->private_key_path);
-        } elseif (!empty($sshConfig->password)) {
+        } elseif (! empty($sshConfig->password)) {
             $ssh->usePassword($sshConfig->password);
         }
 
@@ -443,7 +444,7 @@ class SshManagerService
         // Remove database records for keys that no longer exist in the filesystem
         $dbKeys = SshKey::all();
         foreach ($dbKeys as $dbKey) {
-            if (!isset($fsKeys[$dbKey->name])) {
+            if (! isset($fsKeys[$dbKey->name])) {
                 $dbKey->delete();
                 $result['removed']++;
             }
@@ -472,11 +473,12 @@ class SshManagerService
             // Skip if already exists to avoid overwriting any custom settings
             if ($sshConfig) {
                 $result['skipped']++;
+
                 continue;
             }
 
             // Create a new config
-            $sshConfig = new SshConfig();
+            $sshConfig = new SshConfig;
             $sshConfig->name = $configInfo['name'];
             $sshConfig->host = $configInfo['hostname'];
             $sshConfig->port = $configInfo['port'];

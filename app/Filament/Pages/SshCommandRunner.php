@@ -49,40 +49,40 @@ class SshCommandRunner extends Page
     public function mount(): void
     {
         // Ensure SSH directory is initialized
-        $sshManager = new SshManagerService();
+        $sshManager = new SshManagerService;
         try {
             $sshManager->initializeSshDirectory();
         } catch (\Exception $e) {
             // Just continue, we'll still try to load whatever connections are in the database
         }
-        
+
         // Initialize form with default values, including debug_mode = false
         $this->form->fill([
-            'debug_mode' => false, 
+            'debug_mode' => false,
             'ssh_config_id' => SshConfig::where('is_default', true)->first()?->id,
         ]);
-        
+
         // Ensure data array has debug_mode initialized
-        if (!isset($this->data['debug_mode'])) {
+        if (! isset($this->data['debug_mode'])) {
             $this->data['debug_mode'] = false;
         }
     }
-    
+
     /**
      * Toggle the debug mode state
      */
     public function toggleDebugMode(): void
     {
         $currentState = $this->data['debug_mode'] ?? false;
-        $this->data['debug_mode'] = !$currentState;
-        
+        $this->data['debug_mode'] = ! $currentState;
+
         // Reset debug output if turning off debug mode
-        if (!$this->data['debug_mode']) {
+        if (! $this->data['debug_mode']) {
             $this->debugOutput = null;
             $this->hasDebugOutput = false;
         } else {
             // If turning on debug mode, show initial message
-            $this->debugOutput = "Debug mode enabled. Run a command to see detailed information.";
+            $this->debugOutput = 'Debug mode enabled. Run a command to see detailed information.';
             $this->hasDebugOutput = true;
         }
     }
@@ -147,13 +147,13 @@ class SshCommandRunner extends Page
     {
         // Save the debug state before getting form data
         $debugWasEnabled = $this->data['debug_mode'] ?? false;
-        
+
         $data = $this->form->getState();
 
         // Get SSH configuration
         $sshConfig = SshConfig::find($data['ssh_config_id']);
 
-        if (!$sshConfig) {
+        if (! $sshConfig) {
             Notification::make()->title('SSH connection not found')->danger()->send();
 
             return;
@@ -171,7 +171,7 @@ class SshCommandRunner extends Page
                 // For sx function calls, execute the command part directly with bash -c
                 $actualCommand = $matches[2];
                 $process = $ssh->execute(
-                    "bash -ci '" . str_replace("'", "'\\''", $actualCommand) . "'",
+                    "bash -ci '".str_replace("'", "'\\''", $actualCommand)."'",
                 );
             }
             // Check if the command uses bash -ci pattern (frequently used in shell scripts)
@@ -186,7 +186,7 @@ class SshCommandRunner extends Page
                 // Extract the actual command and run it with bash -c
                 $actualCommand = $matches[1];
                 $process = $ssh->execute(
-                    "bash -ci '" . str_replace("'", "'\\''", $actualCommand) . "'",
+                    "bash -ci '".str_replace("'", "'\\''", $actualCommand)."'",
                 );
             }
             // Check if the command contains a reference to $_HOST which needs to be replaced
@@ -206,7 +206,7 @@ class SshCommandRunner extends Page
                 ) {
                     $processed = $matches[1];
                     $process = $ssh->execute(
-                        "bash -ci '" . str_replace("'", "'\\''", $processed) . "'",
+                        "bash -ci '".str_replace("'", "'\\''", $processed)."'",
                     );
                 } else {
                     // Execute the processed command
@@ -224,32 +224,32 @@ class SshCommandRunner extends Page
 
             // Get debug mode state from the form data
             $debugMode = isset($data['debug_mode']) && filter_var($data['debug_mode'], FILTER_VALIDATE_BOOLEAN);
-            
+
             // If debug mode is enabled (either before or now), show debug output
             if ($debugWasEnabled || $debugMode) {
                 // Build debug output
                 $debugOutput = "==== SSH CONNECTION ====\n";
-                $debugOutput .= "Host: " . $sshConfig->host . "\n";
-                $debugOutput .= "Username: " . $sshConfig->username . "\n";
-                $debugOutput .= "Port: " . $sshConfig->port . "\n";
-                
+                $debugOutput .= 'Host: '.$sshConfig->host."\n";
+                $debugOutput .= 'Username: '.$sshConfig->username."\n";
+                $debugOutput .= 'Port: '.$sshConfig->port."\n";
+
                 $debugOutput .= "\n==== COMMAND EXECUTION ====\n";
-                $debugOutput .= "Command: " . $command;
+                $debugOutput .= 'Command: '.$command;
 
                 // Add process details
                 $debugOutput .= "\n\nProcess Information:";
-                $debugOutput .= "\n- Exit Code: " . $process->getExitCode();
+                $debugOutput .= "\n- Exit Code: ".$process->getExitCode();
 
                 // Include raw error output in debug
-                if (!empty($errorOutput)) {
-                    $debugOutput .= "\n\nRaw Error Output:\n" . $errorOutput;
+                if (! empty($errorOutput)) {
+                    $debugOutput .= "\n\nRaw Error Output:\n".$errorOutput;
                 }
 
                 // Store executed SSH command string (if available)
                 if (method_exists($ssh, 'getExecuteCommand')) {
-                    $debugOutput .= "\n\nExecuted command: " . $ssh->getExecuteCommand($command);
+                    $debugOutput .= "\n\nExecuted command: ".$ssh->getExecuteCommand($command);
                 }
-                
+
                 // Always set the debug output and flag on if it was previously enabled
                 $this->debugOutput = $debugOutput;
                 $this->hasDebugOutput = true;
@@ -264,11 +264,11 @@ class SshCommandRunner extends Page
             $errorOutput = $this->filterKnownHostsMessages($errorOutput);
 
             $this->commandError = $errorOutput;
-            $this->hasOutput = !empty($this->commandOutput) || !empty($this->commandError);
+            $this->hasOutput = ! empty($this->commandOutput) || ! empty($this->commandError);
 
             // Consider command successful if we have output, even if exit code is non-zero
             // This is more user-friendly since many SSH commands can return non-zero but still produce useful output
-            if ($this->commandOutput || !$this->commandError) {
+            if ($this->commandOutput || ! $this->commandError) {
                 Notification::make()->title('Command executed successfully')->success()->send();
             } else {
                 Notification::make()
@@ -281,10 +281,10 @@ class SshCommandRunner extends Page
             // Handle exceptions and preserve debug info
             $this->commandError = $e->getMessage();
             $this->hasOutput = true;
-            
+
             // Always show debug information when there's an error if debug mode is on
             if ($debugWasEnabled) {
-                $this->debugOutput = "ERROR ENCOUNTERED: " . $e->getMessage();
+                $this->debugOutput = 'ERROR ENCOUNTERED: '.$e->getMessage();
                 $this->hasDebugOutput = true;
             }
 
@@ -311,11 +311,11 @@ class SshCommandRunner extends Page
         $debugInfo[] = "- Username: {$sshConfig->username}";
 
         // Use private key if available, otherwise use password
-        if (!empty($sshConfig->private_key_path)) {
+        if (! empty($sshConfig->private_key_path)) {
             $ssh->usePrivateKey($sshConfig->private_key_path);
             $debugInfo[] = '- Authentication: Private Key';
             $debugInfo[] = "- Key Path: {$sshConfig->private_key_path}";
-        } elseif (!empty($sshConfig->password)) {
+        } elseif (! empty($sshConfig->password)) {
             $ssh->usePassword($sshConfig->password);
             $debugInfo[] = '- Authentication: Password';
         } else {
