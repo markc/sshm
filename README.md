@@ -1,4 +1,4 @@
-# Laravel SSH Command Runner with Filament
+# Laravel SSH Command Runner with Filament v3
 
 This project is a Laravel 12 application integrated with Filament 3.2 that allows you to execute SSH commands on remote servers through a web interface.
 
@@ -85,8 +85,9 @@ composer dev
 1. Access the Filament admin panel at `http://localhost:8000/admin`
 
 2. Login with the default admin account:
-   - Email: admin@example.com
-   - Password: password
+
+    - Email: admin@example.com
+    - Password: password
 
 3. Navigate to "SSH Configurations" to set up your SSH connections
 
