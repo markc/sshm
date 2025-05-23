@@ -34,7 +34,15 @@ jobs:
     - name: Install NPM Dependencies
       run: npm ci
 
+    - name: Create Database
+      run: |
+        mkdir -p database
+        touch database/database.sqlite
+
     - name: Generate key
+      env:
+        DB_CONNECTION: sqlite
+        DB_DATABASE: database/database.sqlite
       run: php artisan key:generate
 
     - name: Directory Permissions
@@ -42,11 +50,6 @@ jobs:
 
     - name: Build assets
       run: npm run build
-
-    - name: Create Database
-      run: |
-        mkdir -p database
-        touch database/database.sqlite
 
     - name: Run database migrations
       env:

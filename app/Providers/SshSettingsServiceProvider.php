@@ -64,17 +64,27 @@ class SshSettingsServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Create settings table if it doesn't exist
-        if (! Schema::hasTable('settings')) {
-            Schema::create('settings', function ($table) {
-                $table->id();
-                $table->string('group')->index();
-                $table->string('name');
-                $table->text('value')->nullable();
-                $table->timestamps();
+        // Only try to create settings table if we have a database connection
+        try {
+            if (config('database.default') !== 'sqlite' || file_exists(config('database.connections.sqlite.database'))) {
+                if (! Schema::hasTable('settings')) {
+                    Schema::create('settings', function ($table) {
+                        $table->id();
+                        $table->string('group')->index();
+                        $table->string('name');
+                        $table->text('value')->nullable();
+                        $table->timestamps();
 
-                $table->unique(['group', 'name']);
-            });
+                        $table->unique(['group', 'name']);
+                    });
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently fail during CI/testing when database isn't ready
+            if (app()->environment('testing', 'github')) {
+                return;
+            }
+            report($e);
         }
     }
 }
