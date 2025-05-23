@@ -3,24 +3,21 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SshKeyResource\Pages;
-use App\Filament\Resources\SshKeyResource\RelationManagers;
 use App\Models\SshKey;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class SshKeyResource extends Resource
 {
     protected static ?string $model = SshKey::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
-    
+
     protected static ?string $navigationLabel = 'SSH Keys';
-    
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
@@ -38,13 +35,13 @@ class SshKeyResource extends Resource
                                     ->label('Key Name')
                                     ->placeholder('Enter a unique name for this SSH key')
                                     ->helperText('This will be used as the filename (e.g., id_ed25519)'),
-                                
+
                                 Forms\Components\TextInput::make('comment')
                                     ->maxLength(255)
                                     ->label('Comment')
                                     ->placeholder('username@hostname (optional)')
                                     ->helperText('A comment to help identify this key'),
-                                
+
                                 Forms\Components\Select::make('type')
                                     ->required()
                                     ->options([
@@ -56,14 +53,14 @@ class SshKeyResource extends Resource
                                     ->default('ed25519')
                                     ->label('Key Type')
                                     ->helperText('ED25519 is recommended for new keys'),
-                                
+
                                 Forms\Components\Toggle::make('active')
                                     ->required()
                                     ->default(true)
                                     ->label('Active')
                                     ->helperText('Inactive keys will not be synced to the filesystem'),
                             ]),
-                            
+
                         Forms\Components\Tabs\Tab::make('Key Contents')
                             ->schema([
                                 Forms\Components\Textarea::make('public_key')
@@ -73,7 +70,7 @@ class SshKeyResource extends Resource
                                     ->helperText('The public key content (typically found in ~/.ssh/id_ed25519.pub)')
                                     ->rows(3)
                                     ->columnSpanFull(),
-                                
+
                                 Forms\Components\Textarea::make('private_key')
                                     ->required()
                                     ->label('Private Key')
@@ -126,14 +123,14 @@ class SshKeyResource extends Resource
                     ->copyable()
                     ->copyMessage('Public key copied to clipboard')
                     ->copyMessageDuration(1500),
-                
+
                 Tables\Columns\TextColumn::make('fingerprint')
                     ->label('Fingerprint')
                     ->getStateUsing(function (SshKey $record) {
                         try {
                             return $record->getFingerprint();
                         } catch (\Exception $e) {
-                            return 'Error: ' . $e->getMessage();
+                            return 'Error: '.$e->getMessage();
                         }
                     })
                     ->searchable(false)
@@ -178,9 +175,9 @@ class SshKeyResource extends Resource
                             // The actual copy is handled by JavaScript in the browser
                         })
                         ->extraAttributes([
-                            'x-data' => "{ copied: false }",
+                            'x-data' => '{ copied: false }',
                             'x-on:click' => "
-                                navigator.clipboard.writeText('" . htmlspecialchars_decode(addslashes('{{ $record->public_key }}')) . "');
+                                navigator.clipboard.writeText('".htmlspecialchars_decode(addslashes('{{ $record->public_key }}'))."');
                                 copied = true;
                                 setTimeout(() => copied = false, 2000);
                             ",
@@ -195,18 +192,18 @@ class SshKeyResource extends Resource
                             $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
                             $privateKeyPath = "{$homePath}/.ssh/{$record->name}";
                             $publicKeyPath = "{$homePath}/.ssh/{$record->name}.pub";
-                            
+
                             try {
-                                if (!is_dir(dirname($privateKeyPath))) {
+                                if (! is_dir(dirname($privateKeyPath))) {
                                     mkdir(dirname($privateKeyPath), 0700, true);
                                 }
-                                
+
                                 file_put_contents($privateKeyPath, $record->private_key);
                                 chmod($privateKeyPath, 0600);
-                                
+
                                 file_put_contents($publicKeyPath, $record->public_key);
                                 chmod($publicKeyPath, 0644);
-                                
+
                                 Filament\Notifications\Notification::make()
                                     ->success()
                                     ->title('Key Synced')
@@ -232,27 +229,27 @@ class SshKeyResource extends Resource
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records, App\Services\SshService $sshService) {
                             $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
                             $sshPath = "{$homePath}/.ssh";
-                            
+
                             try {
-                                if (!is_dir($sshPath)) {
+                                if (! is_dir($sshPath)) {
                                     mkdir($sshPath, 0700, true);
                                 }
-                                
+
                                 $syncCount = 0;
-                                
+
                                 foreach ($records as $key) {
                                     $privateKeyPath = "{$sshPath}/{$key->name}";
                                     $publicKeyPath = "{$sshPath}/{$key->name}.pub";
-                                    
+
                                     file_put_contents($privateKeyPath, $key->private_key);
                                     chmod($privateKeyPath, 0600);
-                                    
+
                                     file_put_contents($publicKeyPath, $key->public_key);
                                     chmod($publicKeyPath, 0644);
-                                    
+
                                     $syncCount++;
                                 }
-                                
+
                                 Filament\Notifications\Notification::make()
                                     ->success()
                                     ->title('Keys Synced')

@@ -34,7 +34,7 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-    
+
     'ssh' => [
         'home_dir' => env('SSH_HOME_DIR', $_SERVER['HOME'] ?? '/home/user'),
         'default_user' => env('SSH_DEFAULT_USER', 'root'),

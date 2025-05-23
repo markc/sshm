@@ -37,18 +37,18 @@ class SshHost extends Model
     public function toSshConfigFormat(): string
     {
         $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
-        
+
         $config = "Host {$this->name}\n";
         $config .= "  Hostname {$this->hostname}\n";
         $config .= "  Port {$this->port}\n";
         $config .= "  User {$this->user}\n";
-        
+
         if ($this->identity_file) {
             $config .= "  IdentityFile {$homePath}/.ssh/{$this->identity_file}\n";
         } else {
             $config .= "  #IdentityFile none\n";
         }
-        
+
         return $config;
     }
 }

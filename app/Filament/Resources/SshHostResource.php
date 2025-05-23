@@ -3,24 +3,21 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SshHostResource\Pages;
-use App\Filament\Resources\SshHostResource\RelationManagers;
 use App\Models\SshHost;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class SshHostResource extends Resource
 {
     protected static ?string $model = SshHost::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-server';
-    
+
     protected static ?string $navigationLabel = 'SSH Hosts';
-    
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
@@ -34,14 +31,14 @@ class SshHostResource extends Resource
                     ->label('Host Name')
                     ->placeholder('Enter a unique name for this SSH host')
                     ->helperText('This will be used as the Host entry in your SSH config'),
-                    
+
                 Forms\Components\TextInput::make('hostname')
                     ->required()
                     ->maxLength(255)
                     ->label('Hostname/IP')
                     ->placeholder('example.com or 192.168.1.100')
                     ->helperText('The hostname or IP address of the remote server'),
-                    
+
                 Forms\Components\TextInput::make('port')
                     ->required()
                     ->numeric()
@@ -51,7 +48,7 @@ class SshHostResource extends Resource
                     ->label('Port')
                     ->placeholder('22')
                     ->helperText('The SSH port of the remote server'),
-                    
+
                 Forms\Components\TextInput::make('user')
                     ->required()
                     ->default('root')
@@ -59,7 +56,7 @@ class SshHostResource extends Resource
                     ->label('Username')
                     ->placeholder('root')
                     ->helperText('The username to use when connecting to the remote server'),
-                    
+
                 Forms\Components\Select::make('identity_file')
                     ->relationship('sshKey', 'name')
                     ->nullable()
@@ -68,7 +65,7 @@ class SshHostResource extends Resource
                     ->label('SSH Key')
                     ->placeholder('Select an SSH key')
                     ->helperText('The SSH key to use for authentication (optional)'),
-                    
+
                 Forms\Components\Toggle::make('active')
                     ->required()
                     ->default(true)
@@ -129,18 +126,18 @@ class SshHostResource extends Resource
                         ->color('success')
                         ->action(function (SshHost $record, App\Services\SshService $sshService) {
                             $result = $sshService->executeCommand($record, 'echo "Connection successful"');
-                            
+
                             if ($result['success']) {
                                 Filament\Notifications\Notification::make()
                                     ->success()
                                     ->title('Connection Successful')
-                                    ->body('Successfully connected to ' . $record->hostname)
+                                    ->body('Successfully connected to '.$record->hostname)
                                     ->send();
                             } else {
                                 Filament\Notifications\Notification::make()
                                     ->danger()
                                     ->title('Connection Failed')
-                                    ->body($result['error'] ?: 'Failed to connect to ' . $record->hostname)
+                                    ->body($result['error'] ?: 'Failed to connect to '.$record->hostname)
                                     ->send();
                             }
                         }),
@@ -152,19 +149,19 @@ class SshHostResource extends Resource
                             $configContent = $record->toSshConfigFormat();
                             $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
                             $configPath = "{$homePath}/.ssh/config.d/{$record->name}";
-                            
+
                             try {
-                                if (!is_dir(dirname($configPath))) {
+                                if (! is_dir(dirname($configPath))) {
                                     mkdir(dirname($configPath), 0700, true);
                                 }
-                                
+
                                 file_put_contents($configPath, $configContent);
                                 chmod($configPath, 0600);
-                                
+
                                 Filament\Notifications\Notification::make()
                                     ->success()
                                     ->title('Config Synced')
-                                    ->body('Host configuration has been saved to ' . $configPath)
+                                    ->body('Host configuration has been saved to '.$configPath)
                                     ->send();
                             } catch (\Exception $e) {
                                 Filament\Notifications\Notification::make()
@@ -186,23 +183,23 @@ class SshHostResource extends Resource
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records, App\Services\SshService $sshService) {
                             $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
                             $configDPath = "{$homePath}/.ssh/config.d";
-                            
+
                             try {
-                                if (!is_dir($configDPath)) {
+                                if (! is_dir($configDPath)) {
                                     mkdir($configDPath, 0700, true);
                                 }
-                                
+
                                 $syncCount = 0;
-                                
+
                                 foreach ($records as $host) {
                                     $configContent = $host->toSshConfigFormat();
                                     $configPath = "{$configDPath}/{$host->name}";
-                                    
+
                                     file_put_contents($configPath, $configContent);
                                     chmod($configPath, 0600);
                                     $syncCount++;
                                 }
-                                
+
                                 Filament\Notifications\Notification::make()
                                     ->success()
                                     ->title('Configs Synced')

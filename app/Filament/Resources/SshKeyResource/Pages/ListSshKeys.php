@@ -34,25 +34,26 @@ class ListSshKeys extends ListRecords
                             ->maxLength(255)
                             ->placeholder('id_ed25519')
                             ->helperText('The name of the key file (e.g., id_ed25519)'),
-                            
+
                         Forms\Components\TextInput::make('comment')
                             ->label('Comment')
                             ->maxLength(255)
                             ->default(function () {
                                 $user = trim(shell_exec('whoami') ?: 'user');
                                 $host = trim(shell_exec('hostname') ?: 'localhost');
+
                                 return "{$user}@{$host}";
                             })
                             ->placeholder('user@hostname')
                             ->helperText('A comment to help identify this key'),
-                            
+
                         Forms\Components\TextInput::make('password')
                             ->label('Password (Optional)')
                             ->password()
                             ->maxLength(255)
                             ->placeholder('Leave empty for no password')
                             ->helperText('A password to protect the private key (optional)'),
-                            
+
                         Forms\Components\Select::make('type')
                             ->label('Key Type')
                             ->options([
@@ -72,13 +73,13 @@ class ListSshKeys extends ListRecords
                                 $data['password'] ?? '',
                                 $data['type'] ?? 'ed25519'
                             );
-                            
+
                             Notification::make()
                                 ->success()
                                 ->title('SSH Key Generated')
                                 ->body("Successfully generated {$data['type']} key pair named {$data['name']}")
                                 ->send();
-                                
+
                             $this->resetTable();
                         } catch (\Exception $e) {
                             Notification::make()
@@ -88,7 +89,7 @@ class ListSshKeys extends ListRecords
                                 ->send();
                         }
                     }),
-                    
+
                 Actions\Action::make('importFromFiles')
                     ->label('Import from Files')
                     ->icon('heroicon-o-arrow-down-tray')
@@ -96,14 +97,14 @@ class ListSshKeys extends ListRecords
                     ->action(function () {
                         $sshService = app(SshService::class);
                         $result = $sshService->importKeysFromFiles();
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->success()
                                 ->title('Import Successful')
                                 ->body($result['message'])
                                 ->send();
-                                
+
                             $this->resetTable();
                         } else {
                             Notification::make()
@@ -113,7 +114,7 @@ class ListSshKeys extends ListRecords
                                 ->send();
                         }
                     }),
-                    
+
                 Actions\Action::make('syncAllToFiles')
                     ->label('Sync All to Files')
                     ->icon('heroicon-o-arrow-path')
@@ -121,7 +122,7 @@ class ListSshKeys extends ListRecords
                     ->action(function () {
                         $sshService = app(SshService::class);
                         $result = $sshService->syncKeysToKeyFiles();
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->success()
@@ -137,9 +138,9 @@ class ListSshKeys extends ListRecords
                         }
                     }),
             ])
-            ->label('SSH Key Actions')
-            ->icon('heroicon-o-key'),
-            
+                ->label('SSH Key Actions')
+                ->icon('heroicon-o-key'),
+
             // Create button positioned last (on the right)
             Actions\CreateAction::make(),
         ];

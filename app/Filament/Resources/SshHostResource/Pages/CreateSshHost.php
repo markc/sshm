@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\SshHostResource\Pages;
 
 use App\Filament\Resources\SshHostResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateSshHost extends CreateRecord

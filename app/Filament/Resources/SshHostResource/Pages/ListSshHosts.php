@@ -24,7 +24,7 @@ class ListSshHosts extends ListRecords
                     ->action(function () {
                         $sshService = app(SshService::class);
                         $result = $sshService->initSshDirectory();
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->success()
@@ -39,7 +39,7 @@ class ListSshHosts extends ListRecords
                                 ->send();
                         }
                     }),
-                    
+
                 Actions\Action::make('updatePermissions')
                     ->label('Update SSH Permissions')
                     ->icon('heroicon-o-lock-closed')
@@ -47,7 +47,7 @@ class ListSshHosts extends ListRecords
                     ->action(function () {
                         $sshService = app(SshService::class);
                         $result = $sshService->updatePermissions();
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->success()
@@ -62,7 +62,7 @@ class ListSshHosts extends ListRecords
                                 ->send();
                         }
                     }),
-                    
+
                 Actions\Action::make('importFromConfig')
                     ->label('Import from Config Files')
                     ->icon('heroicon-o-arrow-down-tray')
@@ -70,14 +70,14 @@ class ListSshHosts extends ListRecords
                     ->action(function () {
                         $sshService = app(SshService::class);
                         $result = $sshService->importHostsFromConfigFiles();
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->success()
                                 ->title('Import Successful')
                                 ->body($result['message'])
                                 ->send();
-                                
+
                             $this->resetTable();
                         } else {
                             Notification::make()
@@ -87,7 +87,7 @@ class ListSshHosts extends ListRecords
                                 ->send();
                         }
                     }),
-                    
+
                 Actions\Action::make('syncAllToConfig')
                     ->label('Sync All to Config')
                     ->icon('heroicon-o-arrow-path')
@@ -95,7 +95,7 @@ class ListSshHosts extends ListRecords
                     ->action(function () {
                         $sshService = app(SshService::class);
                         $result = $sshService->syncHostsToConfigFiles();
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->success()
@@ -110,7 +110,7 @@ class ListSshHosts extends ListRecords
                                 ->send();
                         }
                     }),
-                    
+
                 Actions\Action::make('sshServiceControl')
                     ->label('SSH Service Control')
                     ->icon('heroicon-o-power')
@@ -130,13 +130,13 @@ class ListSshHosts extends ListRecords
                     ])
                     ->action(function (array $data) {
                         $sshService = app(SshService::class);
-                        
+
                         if ($data['action'] === 'start') {
                             $result = $sshService->startSshService();
                         } else {
                             $result = $sshService->stopSshService();
                         }
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->success()
@@ -152,9 +152,9 @@ class ListSshHosts extends ListRecords
                         }
                     }),
             ])
-            ->label('SSH Actions')
-            ->icon('heroicon-o-cog-6-tooth'),
-            
+                ->label('SSH Actions')
+                ->icon('heroicon-o-cog-6-tooth'),
+
             // Create button positioned last (on the right)
             Actions\CreateAction::make(),
         ];

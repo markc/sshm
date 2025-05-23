@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static int getDefaultPort()
  * @method static string getDefaultKeyType()
  * @method static bool getStrictHostChecking()
- * 
+ *
  * @see \App\Settings\SshSettings
  */
 class SshSettings extends Facade
