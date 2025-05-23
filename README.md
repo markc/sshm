@@ -1,5 +1,9 @@
 # SSH Manager (SSHM)
 
+[![Tests](https://github.com/markc/sshm/actions/workflows/tests.yml/badge.svg)](https://github.com/markc/sshm/actions/workflows/tests.yml)
+[![Build & Deploy](https://github.com/markc/sshm/actions/workflows/build.yml/badge.svg)](https://github.com/markc/sshm/actions/workflows/build.yml)
+[![Code Quality](https://github.com/markc/sshm/actions/workflows/code-quality.yml/badge.svg)](https://github.com/markc/sshm/actions/workflows/code-quality.yml)
+
 ## ⚠️ **CRITICAL SECURITY WARNING** ⚠️
 **THIS APPLICATION SHOULD ONLY BE USED ON LOCALHOST (127.0.0.1) AND NEVER ON A PUBLIC OR EXPOSED IP ADDRESS. IT ALLOWS ARBITRARY COMMAND EXECUTION ON REMOTE SERVERS THROUGH A WEB INTERFACE.**
 
