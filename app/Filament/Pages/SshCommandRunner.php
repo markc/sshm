@@ -29,6 +29,12 @@ class SshCommandRunner extends Page
     
     public bool $isCommandRunning = false;
     
+    public bool $verboseDebug = false;
+    
+    public string $debugOutput = '';
+    
+    public bool $useBash = false;
+    
     public ?string $selectedHost = null;
     
     public ?string $command = null;
@@ -47,46 +53,96 @@ class SshCommandRunner extends Page
     {
         return $form
             ->schema([
-                Select::make('selectedHost')
-                    ->label('Select SSH Host')
-                    ->options(function () {
-                        return SshHost::where('active', true)
-                            ->pluck('name', 'id')
-                            ->toArray();
-                    })
-                    ->hidden(fn () => $this->useCustomConnection)
-                    ->afterStateUpdated(function ($state) {
-                        if ($state) {
-                            $this->selectedHost = $state;
-                        }
-                    }),
-                
-                TextInput::make('hostname')
-                    ->label('Hostname')
-                    ->required()
-                    ->hidden(fn () => !$this->useCustomConnection),
-                
-                TextInput::make('port')
-                    ->label('Port')
-                    ->numeric()
-                    ->default('22')
-                    ->hidden(fn () => !$this->useCustomConnection),
-                
-                TextInput::make('username')
-                    ->label('Username')
-                    ->default('root')
-                    ->hidden(fn () => !$this->useCustomConnection),
-                
-                TextInput::make('identityFile')
-                    ->label('Identity File (optional)')
-                    ->placeholder('~/.ssh/id_ed25519')
-                    ->hidden(fn () => !$this->useCustomConnection),
-                
-                Textarea::make('command')
-                    ->label('Enter SSH Command(s)')
-                    ->required()
-                    ->rows(5)
-                    ->placeholder('Enter SSH command(s) to execute...')
+                \Filament\Forms\Components\Grid::make(2)
+                    ->schema([
+                        // Left side - 50% width for command textarea
+                        \Filament\Forms\Components\Group::make([
+                            Textarea::make('command')
+                                ->label('Enter SSH Command(s)')
+                                ->required()
+                                ->rows(8)
+                                ->placeholder('Enter SSH command(s) to execute...')
+                                ->extraAttributes(['style' => 'resize: none;'])
+                        ])
+                        ->columnSpan(1),
+                        
+                        // Right side - 50% width for controls
+                        \Filament\Forms\Components\Group::make([
+                            // SSH Host selector and Run button on same line
+                            \Filament\Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Select::make('selectedHost')
+                                        ->label('Select SSH Host')
+                                        ->options(function () {
+                                            return SshHost::where('active', true)
+                                                ->pluck('name', 'id')
+                                                ->toArray();
+                                        })
+                                        ->hidden(fn () => $this->useCustomConnection)
+                                        ->afterStateUpdated(function ($state) {
+                                            if ($state) {
+                                                $this->selectedHost = $state;
+                                            }
+                                        })
+                                        ->columnSpan(1),
+                                    
+                                    \Filament\Forms\Components\Group::make([
+                                        \Filament\Forms\Components\Actions::make([
+                                            \Filament\Forms\Components\Actions\Action::make('runCommand')
+                                                ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
+                                                ->disabled(fn () => $this->isCommandRunning)
+                                                ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
+                                                ->iconPosition('before')
+                                                ->color('primary')
+                                                ->size('lg')
+                                                ->extraAttributes(fn () => $this->isCommandRunning ? ['class' => 'animate-pulse'] : [])
+                                                ->action(function () {
+                                                    $this->runCommand();
+                                                })
+                                                ->requiresConfirmation(false)
+                                                ->button()
+                                                ->extraAttributes(['class' => 'w-full mt-6'])
+                                        ])
+                                    ])
+                                    ->columnSpan(1)
+                                ]),
+                            
+                            // Custom connection fields (stacked vertically in the right column)
+                            TextInput::make('hostname')
+                                ->label('Hostname')
+                                ->required()
+                                ->hidden(fn () => !$this->useCustomConnection)
+                                ->extraAttributes(['class' => 'mb-2']),
+                            
+                            TextInput::make('port')
+                                ->label('Port')
+                                ->numeric()
+                                ->default('22')
+                                ->hidden(fn () => !$this->useCustomConnection)
+                                ->extraAttributes(['class' => 'mb-2']),
+                            
+                            TextInput::make('username')
+                                ->label('Username')
+                                ->default('root')
+                                ->hidden(fn () => !$this->useCustomConnection)
+                                ->extraAttributes(['class' => 'mb-2']),
+                            
+                            TextInput::make('identityFile')
+                                ->label('Identity File (optional)')
+                                ->placeholder('~/.ssh/id_ed25519')
+                                ->hidden(fn () => !$this->useCustomConnection)
+                                ->extraAttributes(['class' => 'mb-4']),
+                            
+                            \Filament\Forms\Components\Toggle::make('verboseDebug')
+                                ->label('Verbose Debug')
+                                ->inline(true),
+                            
+                            \Filament\Forms\Components\Toggle::make('useBash')
+                                ->label('Use bash')
+                                ->inline(true)
+                        ])
+                        ->columnSpan(1)
+                    ])
             ]);
     }
     
@@ -108,6 +164,7 @@ class SshCommandRunner extends Page
         // Reset output and set running state
         $this->streamingOutput = '';
         $this->commandOutput = null;
+        $this->debugOutput = '';
         $this->isCommandRunning = true;
         
         $sshService = app(SshService::class);
@@ -129,7 +186,13 @@ class SshCommandRunner extends Page
                     function($type, $line) {
                         $this->streamingOutput .= $line;
                         $this->dispatch('outputUpdated', $this->streamingOutput);
-                    }
+                    },
+                    $this->verboseDebug,
+                    function($debugLine) {
+                        $this->debugOutput .= $debugLine . "\n";
+                        $this->dispatch('debugUpdated', $this->debugOutput);
+                    },
+                    $this->useBash
                 );
             } else {
                 $host = SshHost::findOrFail($this->selectedHost);
@@ -139,7 +202,13 @@ class SshCommandRunner extends Page
                     function($type, $line) {
                         $this->streamingOutput .= $line;
                         $this->dispatch('outputUpdated', $this->streamingOutput);
-                    }
+                    },
+                    $this->verboseDebug,
+                    function($debugLine) {
+                        $this->debugOutput .= $debugLine . "\n";
+                        $this->dispatch('debugUpdated', $this->debugOutput);
+                    },
+                    $this->useBash
                 );
             }
             

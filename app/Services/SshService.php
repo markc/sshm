@@ -72,47 +72,124 @@ class SshService
     /**
      * Execute an SSH command with streaming output
      */
-    public function executeCommandWithStreaming(SshHost $host, string $command, callable $outputCallback = null): array
+    public function executeCommandWithStreaming(SshHost $host, string $command, callable $outputCallback = null, bool $verboseDebug = false, callable $debugCallback = null, bool $useBash = false): array
     {
         try {
+            if ($debugCallback && $verboseDebug) {
+                $debugCallback("=== SSH Debug Information ===");
+                $debugCallback("Host: {$host->hostname}:{$host->port}");
+                $debugCallback("User: {$host->user}");
+                $debugCallback("Identity File: " . ($host->identity_file ?: 'None'));
+                $debugCallback("Command: {$command}");
+                $debugCallback("Use Bash: " . ($useBash ? 'Yes' : 'No'));
+                $debugCallback("Timestamp: " . now()->toDateTimeString());
+                $debugCallback("=== Connection Setup ===");
+            }
+            
             // Set up the key file if needed
             $privateKeyPath = null;
             if ($host->identity_file) {
                 $sshKey = SshKey::where('name', $host->identity_file)->first();
                 if ($sshKey) {
                     $privateKeyPath = $this->savePrivateKeyToTempFile($sshKey);
+                    if ($debugCallback && $verboseDebug) {
+                        $debugCallback("Private key saved to temporary file: {$privateKeyPath}");
+                    }
                 }
             }
 
             // Create the SSH connection with streaming support
             $ssh = Ssh::create($host->user, $host->hostname);
             
+            if ($debugCallback && $verboseDebug) {
+                $debugCallback("SSH connection object created");
+            }
+            
             // Configure port if not default
             if ($host->port && $host->port != 22) {
                 $ssh->usePort($host->port);
+                if ($debugCallback && $verboseDebug) {
+                    $debugCallback("Port configured: {$host->port}");
+                }
             }
             
             // Configure private key if available
             if ($privateKeyPath) {
                 $ssh->usePrivateKey($privateKeyPath);
+                if ($debugCallback && $verboseDebug) {
+                    $debugCallback("Private key configured");
+                }
             }
             
-            // Disable strict host key checking and reduce verbosity
-            $ssh->disableStrictHostKeyChecking()
-                ->enableQuietMode();
+            // Configure SSH options based on debug mode
+            if ($verboseDebug) {
+                $ssh->disableStrictHostKeyChecking();
+                if ($debugCallback) {
+                    $debugCallback("SSH configured with verbose mode (no quiet mode)");
+                }
+            } else {
+                $ssh->disableStrictHostKeyChecking()
+                    ->enableQuietMode();
+                if ($debugCallback) {
+                    $debugCallback("SSH configured with quiet mode");
+                }
+            }
 
             // Set up output streaming if callback provided
             if ($outputCallback) {
                 $ssh->onOutput($outputCallback);
+                if ($debugCallback && $verboseDebug) {
+                    $debugCallback("Output streaming callback configured");
+                }
             }
 
-            // Execute the command with job control messages suppressed
-            $wrappedCommand = "bash -c '{$command}' 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'";
-            $process = $ssh->execute($wrappedCommand);
+            if ($debugCallback && $verboseDebug) {
+                $debugCallback("=== Command Execution ===");
+                $debugCallback("Starting command execution...");
+            }
+
+            // Prepare the command based on options
+            $finalCommand = $command;
+            
+            if ($useBash) {
+                // Wrap command in interactive bash
+                $finalCommand = "bash -ci '{$command}'";
+                if ($debugCallback && $verboseDebug) {
+                    $debugCallback("Command wrapped in bash: {$finalCommand}");
+                }
+            }
+            
+            // Execute the command - use different wrapping based on debug mode
+            if ($verboseDebug) {
+                // In debug mode, show all output including SSH messages
+                $process = $ssh->execute($finalCommand);
+            } else {
+                // In normal mode, filter out job control messages (but preserve bash wrapping if used)
+                if ($useBash) {
+                    // If using bash, apply filtering after bash execution
+                    $wrappedCommand = "{$finalCommand} 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'";
+                } else {
+                    // Standard filtering for non-bash commands
+                    $wrappedCommand = "bash -c '{$finalCommand}' 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'";
+                }
+                $process = $ssh->execute($wrappedCommand);
+            }
 
             // Clean up the temporary key file
             if ($privateKeyPath && file_exists($privateKeyPath)) {
                 unlink($privateKeyPath);
+                if ($debugCallback && $verboseDebug) {
+                    $debugCallback("Temporary private key file cleaned up");
+                }
+            }
+
+            if ($debugCallback && $verboseDebug) {
+                $debugCallback("=== Command Results ===");
+                $debugCallback("Success: " . ($process->isSuccessful() ? 'Yes' : 'No'));
+                $debugCallback("Exit Code: " . $process->getExitCode());
+                $debugCallback("Output Length: " . strlen($process->getOutput()) . " characters");
+                $debugCallback("Error Length: " . strlen($process->getErrorOutput()) . " characters");
+                $debugCallback("=== Debug Complete ===");
             }
 
             // Return the results
@@ -123,6 +200,13 @@ class SshService
                 'exit_code' => $process->getExitCode(),
             ];
         } catch (Exception $e) {
+            if ($debugCallback && $verboseDebug) {
+                $debugCallback("=== EXCEPTION OCCURRED ===");
+                $debugCallback("Error: " . $e->getMessage());
+                $debugCallback("File: " . $e->getFile());
+                $debugCallback("Line: " . $e->getLine());
+            }
+            
             return [
                 'success' => false,
                 'output' => '',

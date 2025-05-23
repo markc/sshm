@@ -190,3 +190,98 @@ The following dashboard improvements have been implemented:
    All three stats (System Versions, SSH Hosts, SSH Keys) are now displayed in a single widget row with equal 1/3 width each.
 
 These widgets provide immediate visibility into system status and security considerations when users access the dashboard.
+
+## SSH Command Runner Enhancements
+
+The following major enhancements have been implemented for the SSH Command Runner page:
+
+### 1. **Real-Time Command Output Streaming**
+- SSH commands now stream output in real-time instead of waiting for completion
+- Live output display with auto-scrolling in a fixed-height terminal-style area
+- Visual indicators showing "Command Running..." with spinning animation
+- Immediate feedback as commands execute on remote servers
+
+### 2. **Advanced Layout Redesign**
+The SSH Command Runner page has been completely redesigned with a sophisticated horizontal layout:
+
+**Left Side (50% width):**
+- Large command textarea for entering SSH commands
+- 8 rows height with disabled resize for consistent layout
+- Clean, spacious input area for complex multi-line commands
+
+**Right Side (50% width):**
+- **Top Row**: SSH Host selector and Run Command button side-by-side
+- **Middle Section**: Custom connection fields (when using custom connection mode)
+- **Bottom Section**: Debug and execution options
+
+### 3. **Verbose Debug System**
+- **Debug Toggle**: Enable/disable detailed SSH connection debugging
+- **Hidden Debug Area**: Appears only when debug mode is enabled
+- **Real-Time Debug Output**: Terminal-style display with green text on dark background
+- **Comprehensive Debug Information**:
+  - Connection details (host, port, user, identity file)
+  - Setup progress and configuration steps
+  - Command execution status and timing
+  - Results summary with exit codes and output lengths
+  - Full exception details for troubleshooting
+
+### 4. **Bash Execution Mode**
+- **"Use bash" Toggle**: Option to wrap commands in interactive bash
+- **Command Wrapping**: Uses `bash -ci 'command'` for enhanced compatibility
+- **Environment Access**: Loads user's `.bashrc`, aliases, and functions
+- **Smart Integration**: Works with both normal and debug modes
+
+### 5. **UI/UX Improvements**
+- **Balanced 50/50 Layout**: Equal space for command input and controls
+- **Inline Controls**: SSH host selector and run button on same line
+- **Compact Toggles**: Verbose Debug and Use bash toggles with inline labels
+- **Visual States**: Button shows different states (normal, running, disabled)
+- **Clean Separation**: Logical grouping of related functionality
+
+### 6. **Technical Implementation**
+- **Spatie SSH Integration**: Enhanced with streaming callbacks and verbose modes
+- **Filament Grid System**: Custom 2-column layout using pure Filament components
+- **Livewire Events**: Real-time updates via `outputUpdated` and `debugUpdated` events
+- **JavaScript Integration**: Auto-scrolling output areas and event handling
+- **Error Handling**: Comprehensive exception catching and user feedback
+
+These enhancements transform the SSH Command Runner from a basic command execution tool into a professional-grade SSH management interface with real-time feedback, comprehensive debugging, and flexible execution options.
+
+## Documentation Enhancements
+
+The project documentation has been significantly enhanced to provide comprehensive guidance for users and developers:
+
+### **README.md Complete Rewrite**
+The README.md has been completely rewritten to provide a thorough understanding of the SSH Manager application:
+
+**Security-First Approach:**
+- Prominent security warning about localhost-only usage at the top of the document
+- Detailed security considerations section covering network security, access control, command auditing, key security, user privileges, and input validation
+- Clear emphasis on the risks of arbitrary command execution capabilities
+
+**Project Understanding:**
+- Deep explanation of what SSHM actually does and its purpose
+- Comprehensive breakdown of core functionality including command execution engine, connection management, key management system, advanced debugging, and dashboard overview
+- Focus on real-time capabilities and modern web interface benefits
+
+**Installation Excellence:**
+- Single consolidated `<pre>` block containing all installation commands
+- Inclusion of php.new reference for quick PHP development environment setup
+- Detailed step-by-step installation explanations covering repository setup, PHP dependencies, environment configuration, database initialization, admin user creation, frontend assets, and development server
+- Complete prerequisites list with specific version requirements
+- Post-installation configuration guidance for SSH settings
+
+**Usage Documentation:**
+- **Dashboard Overview**: System status visibility, version tracking, and statistics
+- **SSH Command Runner**: Split-screen layout explanation, execution options (verbose debug, bash mode), connection modes (saved hosts vs custom connections)
+- **Host Management**: Configuration storage, bulk operations, connectivity testing
+- **Key Management**: Lifecycle management, generation, import, deployment, security features
+- **System Administration**: Directory initialization, permission management, service control, configuration synchronization
+
+**Professional Presentation:**
+- Structured sections with clear headings and logical flow
+- Technical accuracy combined with accessibility for different user levels
+- Emphasis on both powerful capabilities and responsible usage
+- Integration of all recent feature enhancements and UI improvements
+
+This documentation approach ensures users understand both the potential and responsibilities that come with using a web-based SSH management tool.

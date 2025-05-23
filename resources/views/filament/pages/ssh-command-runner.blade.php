@@ -34,16 +34,18 @@
             </div>
         @endif
 
-        <form wire:submit="runCommand" class="space-y-4">
+        <div class="space-y-4">
             {{ $this->form }}
+        </div>
 
-            <div class="flex justify-end">
-                <x-filament::button type="submit" wire:loading.attr="disabled" :disabled="$isCommandRunning">
-                    <span wire:loading.remove>{{ $isCommandRunning ? 'Command Running...' : 'Run Command' }}</span>
-                    <span wire:loading>Starting Command...</span>
-                </x-filament::button>
+        @if ($verboseDebug && ($debugOutput || $isCommandRunning))
+            <div class="bg-gray-50 dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg p-4 mt-4 border border-gray-300 dark:border-gray-600">
+                <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
+                    🐛 Verbose Debug Output
+                </h4>
+                <pre id="debug-output" class="block w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-800 dark:bg-black text-green-400 text-xs font-mono overflow-x-auto whitespace-pre-wrap h-40 overflow-y-auto">{{ $debugOutput }}</pre>
             </div>
-        </form>
+        @endif
 
     </div>
 
@@ -54,6 +56,14 @@
                 if (outputElement) {
                     outputElement.textContent = output[0];
                     outputElement.scrollTop = outputElement.scrollHeight;
+                }
+            });
+
+            Livewire.on('debugUpdated', (debugOutput) => {
+                const debugElement = document.getElementById('debug-output');
+                if (debugElement) {
+                    debugElement.textContent = debugOutput[0];
+                    debugElement.scrollTop = debugElement.scrollHeight;
                 }
             });
         });
