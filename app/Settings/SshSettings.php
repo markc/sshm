@@ -140,7 +140,7 @@ class SshSettings
                 $envContent = preg_replace("/^$key=.*/m", "$key=$value", $envContent);
             } else {
                 // Add new value
-                $envContent .= PHP_EOL."$key=$value";
+                $envContent .= PHP_EOL . "$key=$value";
             }
         }
 

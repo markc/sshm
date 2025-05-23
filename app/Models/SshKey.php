@@ -31,7 +31,7 @@ class SshKey extends Model
 
     public static function generateKeyPair(string $name, string $comment = '', string $password = '', string $type = 'ed25519'): self
     {
-        $tempDir = sys_get_temp_dir().'/'.uniqid('ssh_key_', true);
+        $tempDir = sys_get_temp_dir() . '/' . uniqid('ssh_key_', true);
         mkdir($tempDir, 0700);
 
         $keyPath = "{$tempDir}/{$name}";
@@ -49,7 +49,7 @@ class SshKey extends Model
         $process = Process::run(implode(' ', array_map('escapeshellarg', $command)));
 
         if (! $process->successful()) {
-            throw new \Exception('Failed to generate SSH key: '.$process->errorOutput());
+            throw new \Exception('Failed to generate SSH key: ' . $process->errorOutput());
         }
 
         $privateKey = file_get_contents($keyPath);
@@ -75,12 +75,12 @@ class SshKey extends Model
         $tempFile = tempnam(sys_get_temp_dir(), 'ssh_key_');
         file_put_contents($tempFile, $this->public_key);
 
-        $process = Process::run('ssh-keygen -lf '.escapeshellarg($tempFile));
+        $process = Process::run('ssh-keygen -lf ' . escapeshellarg($tempFile));
 
         unlink($tempFile);
 
         if (! $process->successful()) {
-            throw new \Exception('Failed to get fingerprint: '.$process->errorOutput());
+            throw new \Exception('Failed to get fingerprint: ' . $process->errorOutput());
         }
 
         return trim($process->output());

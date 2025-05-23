@@ -165,6 +165,77 @@ Administrative tools for SSH environment management:
 
 **Input Validation**: Be cautious with special characters and command injection. Consider implementing command whitelisting for production use.
 
+## Continuous Integration
+
+This project includes comprehensive GitHub Actions workflows for automated testing and deployment:
+
+### Test Workflow (`.github/workflows/tests.yml`)
+- Runs on push to `main`/`develop` branches and pull requests
+- Tests against PHP 8.2 and 8.3
+- Executes full Pest test suite (149 tests, 482 assertions)
+- Includes Laravel Pint code formatting checks
+
+### Build Workflow (`.github/workflows/build.yml`)
+- Builds and compiles frontend assets
+- Runs database migrations
+- Runs Laravel Pint formatting checks
+- Executes complete test suite
+- Creates deployment artifacts
+
+### Code Quality Workflow (`.github/workflows/code-quality.yml`)
+- Dedicated workflow for code quality assurance
+- Laravel Pint formatting validation
+- PHP syntax checking
+- Composer validation and security audits
+
+**Test Coverage**: The application includes comprehensive test coverage:
+- **Unit Tests**: Models, Services, and Widgets (56 tests)
+- **Feature Tests**: Filament pages and resources (93 tests)
+- **Test Categories**: Database operations, UI interactions, form validation, security features
+
+All tests must pass before merge. The test suite covers:
+- SSH host and key management
+- Command execution functionality
+- Filament admin panel features
+- Widget functionality
+- Form validation and security
+- Database operations and migrations
+
+### Code Formatting
+
+This project uses **Laravel Pint** for consistent code formatting:
+
+```bash
+# Check code formatting
+./vendor/bin/pint --test
+
+# Apply code formatting fixes
+./vendor/bin/pint
+```
+
+The project includes a custom `pint.json` configuration with enhanced rules for:
+- Consistent spacing and concatenation
+- Import organization
+- Method chaining indentation
+- Trait management
+- Operator spacing
+
+### Pre-commit Hook
+
+To ensure code quality before commits, you can install the provided pre-commit hook:
+
+```bash
+# Install the pre-commit hook
+cp scripts/pre-commit-hook.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+The hook automatically runs:
+- Laravel Pint formatting checks
+- Full Pest test suite
+
+This prevents commits with formatting issues or failing tests.
+
 ## License
 
 This project is open-sourced software licensed under the [MIT license](LICENSE).

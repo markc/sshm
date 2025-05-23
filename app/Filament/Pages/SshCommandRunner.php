@@ -171,7 +171,7 @@ class SshCommandRunner extends Page
             if ($this->useCustomConnection) {
                 // Create a temporary host for custom connection
                 $tempHost = new SshHost([
-                    'name' => 'temp_'.time(),
+                    'name' => 'temp_' . time(),
                     'hostname' => $this->hostname,
                     'port' => $this->port,
                     'user' => $this->username,
@@ -187,7 +187,7 @@ class SshCommandRunner extends Page
                     },
                     $this->verboseDebug,
                     function ($debugLine) {
-                        $this->debugOutput .= $debugLine."\n";
+                        $this->debugOutput .= $debugLine . "\n";
                         $this->dispatch('debugUpdated', $this->debugOutput);
                     },
                     $this->useBash
@@ -203,7 +203,7 @@ class SshCommandRunner extends Page
                     },
                     $this->verboseDebug,
                     function ($debugLine) {
-                        $this->debugOutput .= $debugLine."\n";
+                        $this->debugOutput .= $debugLine . "\n";
                         $this->dispatch('debugUpdated', $this->debugOutput);
                     },
                     $this->useBash

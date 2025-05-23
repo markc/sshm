@@ -131,13 +131,13 @@ class SshHostResource extends Resource
                                 Filament\Notifications\Notification::make()
                                     ->success()
                                     ->title('Connection Successful')
-                                    ->body('Successfully connected to '.$record->hostname)
+                                    ->body('Successfully connected to ' . $record->hostname)
                                     ->send();
                             } else {
                                 Filament\Notifications\Notification::make()
                                     ->danger()
                                     ->title('Connection Failed')
-                                    ->body($result['error'] ?: 'Failed to connect to '.$record->hostname)
+                                    ->body($result['error'] ?: 'Failed to connect to ' . $record->hostname)
                                     ->send();
                             }
                         }),
@@ -161,7 +161,7 @@ class SshHostResource extends Resource
                                 Filament\Notifications\Notification::make()
                                     ->success()
                                     ->title('Config Synced')
-                                    ->body('Host configuration has been saved to '.$configPath)
+                                    ->body('Host configuration has been saved to ' . $configPath)
                                     ->send();
                             } catch (\Exception $e) {
                                 Filament\Notifications\Notification::make()

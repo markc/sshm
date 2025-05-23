@@ -78,10 +78,10 @@ class SshService
                 $debugCallback('=== SSH Debug Information ===');
                 $debugCallback("Host: {$host->hostname}:{$host->port}");
                 $debugCallback("User: {$host->user}");
-                $debugCallback('Identity File: '.($host->identity_file ?: 'None'));
+                $debugCallback('Identity File: ' . ($host->identity_file ?: 'None'));
                 $debugCallback("Command: {$command}");
-                $debugCallback('Use Bash: '.($useBash ? 'Yes' : 'No'));
-                $debugCallback('Timestamp: '.now()->toDateTimeString());
+                $debugCallback('Use Bash: ' . ($useBash ? 'Yes' : 'No'));
+                $debugCallback('Timestamp: ' . now()->toDateTimeString());
                 $debugCallback('=== Connection Setup ===');
             }
 
@@ -184,10 +184,10 @@ class SshService
 
             if ($debugCallback && $verboseDebug) {
                 $debugCallback('=== Command Results ===');
-                $debugCallback('Success: '.($process->isSuccessful() ? 'Yes' : 'No'));
-                $debugCallback('Exit Code: '.$process->getExitCode());
-                $debugCallback('Output Length: '.strlen($process->getOutput()).' characters');
-                $debugCallback('Error Length: '.strlen($process->getErrorOutput()).' characters');
+                $debugCallback('Success: ' . ($process->isSuccessful() ? 'Yes' : 'No'));
+                $debugCallback('Exit Code: ' . $process->getExitCode());
+                $debugCallback('Output Length: ' . strlen($process->getOutput()) . ' characters');
+                $debugCallback('Error Length: ' . strlen($process->getErrorOutput()) . ' characters');
                 $debugCallback('=== Debug Complete ===');
             }
 
@@ -201,9 +201,9 @@ class SshService
         } catch (Exception $e) {
             if ($debugCallback && $verboseDebug) {
                 $debugCallback('=== EXCEPTION OCCURRED ===');
-                $debugCallback('Error: '.$e->getMessage());
-                $debugCallback('File: '.$e->getFile());
-                $debugCallback('Line: '.$e->getLine());
+                $debugCallback('Error: ' . $e->getMessage());
+                $debugCallback('File: ' . $e->getFile());
+                $debugCallback('Line: ' . $e->getLine());
             }
 
             return [
@@ -245,15 +245,15 @@ class SshService
 
             // Create or update config file
             if (! file_exists($configPath)) {
-                $configContent = '# Created by SSHM on '.date('Y-m-d').PHP_EOL;
-                $configContent .= 'Ciphers aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com'.PHP_EOL.PHP_EOL;
-                $configContent .= 'Include ~/.ssh/config.d/*'.PHP_EOL.PHP_EOL;
-                $configContent .= 'Host *'.PHP_EOL;
-                $configContent .= '  TCPKeepAlive yes'.PHP_EOL;
-                $configContent .= '  ServerAliveInterval 30'.PHP_EOL;
-                $configContent .= '  ForwardAgent yes'.PHP_EOL;
-                $configContent .= '  AddKeysToAgent yes'.PHP_EOL;
-                $configContent .= '  IdentitiesOnly yes'.PHP_EOL;
+                $configContent = '# Created by SSHM on ' . date('Y-m-d') . PHP_EOL;
+                $configContent .= 'Ciphers aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com' . PHP_EOL . PHP_EOL;
+                $configContent .= 'Include ~/.ssh/config.d/*' . PHP_EOL . PHP_EOL;
+                $configContent .= 'Host *' . PHP_EOL;
+                $configContent .= '  TCPKeepAlive yes' . PHP_EOL;
+                $configContent .= '  ServerAliveInterval 30' . PHP_EOL;
+                $configContent .= '  ForwardAgent yes' . PHP_EOL;
+                $configContent .= '  AddKeysToAgent yes' . PHP_EOL;
+                $configContent .= '  IdentitiesOnly yes' . PHP_EOL;
 
                 file_put_contents($configPath, $configContent);
                 chmod($configPath, 0600);
@@ -268,7 +268,7 @@ class SshService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to initialize SSH directory: '.$e->getMessage(),
+                'message' => 'Failed to initialize SSH directory: ' . $e->getMessage(),
             ];
         }
     }
@@ -301,7 +301,7 @@ class SshService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to update SSH directory permissions: '.$e->getMessage(),
+                'message' => 'Failed to update SSH directory permissions: ' . $e->getMessage(),
             ];
         }
     }
@@ -325,7 +325,7 @@ class SshService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to start SSH service: '.$e->getMessage(),
+                'message' => 'Failed to start SSH service: ' . $e->getMessage(),
             ];
         }
     }
@@ -349,7 +349,7 @@ class SshService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to stop SSH service: '.$e->getMessage(),
+                'message' => 'Failed to stop SSH service: ' . $e->getMessage(),
             ];
         }
     }
@@ -405,7 +405,7 @@ class SshService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to synchronize host configuration files: '.$e->getMessage(),
+                'message' => 'Failed to synchronize host configuration files: ' . $e->getMessage(),
             ];
         }
     }
@@ -443,7 +443,7 @@ class SshService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to synchronize SSH key files: '.$e->getMessage(),
+                'message' => 'Failed to synchronize SSH key files: ' . $e->getMessage(),
             ];
         }
     }
@@ -460,7 +460,7 @@ class SshService
             if (! is_dir($configDPath)) {
                 return [
                     'success' => false,
-                    'message' => 'Config directory does not exist: '.$configDPath,
+                    'message' => 'Config directory does not exist: ' . $configDPath,
                 ];
             }
 
@@ -518,7 +518,7 @@ class SshService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to import SSH hosts: '.$e->getMessage(),
+                'message' => 'Failed to import SSH hosts: ' . $e->getMessage(),
             ];
         }
     }
@@ -535,7 +535,7 @@ class SshService
             if (! is_dir($sshPath)) {
                 return [
                     'success' => false,
-                    'message' => 'SSH directory does not exist: '.$sshPath,
+                    'message' => 'SSH directory does not exist: ' . $sshPath,
                 ];
             }
 
@@ -596,7 +596,7 @@ class SshService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to import SSH keys: '.$e->getMessage(),
+                'message' => 'Failed to import SSH keys: ' . $e->getMessage(),
             ];
         }
     }

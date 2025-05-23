@@ -130,7 +130,7 @@ class SshKeyResource extends Resource
                         try {
                             return $record->getFingerprint();
                         } catch (\Exception $e) {
-                            return 'Error: '.$e->getMessage();
+                            return 'Error: ' . $e->getMessage();
                         }
                     })
                     ->searchable(false)
@@ -177,7 +177,7 @@ class SshKeyResource extends Resource
                         ->extraAttributes([
                             'x-data' => '{ copied: false }',
                             'x-on:click' => "
-                                navigator.clipboard.writeText('".htmlspecialchars_decode(addslashes('{{ $record->public_key }}'))."');
+                                navigator.clipboard.writeText('" . htmlspecialchars_decode(addslashes('{{ $record->public_key }}')) . "');
                                 copied = true;
                                 setTimeout(() => copied = false, 2000);
                             ",

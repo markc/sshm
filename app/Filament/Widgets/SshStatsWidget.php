@@ -17,7 +17,7 @@ class SshStatsWidget extends BaseWidget
         $laravelVersion = app()->version();
         $filamentVersion = $this->getPackageVersion('filament/filament');
         $spatieVersion = $this->getPackageVersion('spatie/ssh');
-        $systemDescription = "Laravel v{$laravelVersion}".PHP_EOL."Filament v{$filamentVersion}".PHP_EOL."Spatie SSH v{$spatieVersion}";
+        $systemDescription = "Laravel v{$laravelVersion}" . PHP_EOL . "Filament v{$filamentVersion}" . PHP_EOL . "Spatie SSH v{$spatieVersion}";
 
         // Get SSH stats
         $totalHosts = SshHost::count();
@@ -38,13 +38,13 @@ class SshStatsWidget extends BaseWidget
                 ->color('info'),
 
             Stat::make('SSH Hosts', $totalHosts)
-                ->description($activeHosts.' active, '.$inactiveHosts.' inactive')
+                ->description($activeHosts . ' active, ' . $inactiveHosts . ' inactive')
                 ->descriptionIcon('heroicon-m-server')
                 ->color('primary')
                 ->chart([7, 2, 10, 3, 15, 4, 17]),
 
             Stat::make('SSH Keys', $totalKeys)
-                ->description($activeKeys.' active, '.$inactiveKeys.' inactive')
+                ->description($activeKeys . ' active, ' . $inactiveKeys . ' inactive')
                 ->descriptionIcon('heroicon-m-key')
                 ->color('success')
                 ->chart([2, 10, 5, 22, 15, 10, 25]),
