@@ -62,7 +62,8 @@ class AdminPanelProvider extends PanelProvider
                 ->authMiddleware([
                     DesktopAuthenticate::class, // Also add here to ensure it runs on auth routes
                 ])
-                ->authGuard('web'); // Explicitly set the guard
+                ->authGuard('web') // Explicitly set the guard
+                ->userMenuItems([]); // Remove logout and other user menu items in desktop mode
         } else {
             // Normal mode: Standard authentication
             $panel->login()
