@@ -157,6 +157,9 @@ class ListSshHosts extends ListRecords
 
             // Create button positioned last (on the right)
             Actions\CreateAction::make()
+                ->label('New SSH Host')
+                ->modalHeading('Create SSH Host')
+                ->icon('heroicon-o-plus')
                 ->mutateFormDataUsing(function (array $data): array {
                     // Set defaults if needed
                     $data['port'] = $data['port'] ?? 22;

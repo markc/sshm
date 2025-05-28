@@ -117,9 +117,6 @@ class SshKeyResource extends Resource
                     ->label('Public Key')
                     ->searchable(false)
                     ->limit(40)
-                    ->tooltip(function (SshKey $record): string {
-                        return $record->public_key;
-                    })
                     ->copyable()
                     ->copyMessage('Public key copied to clipboard')
                     ->copyMessageDuration(1500),

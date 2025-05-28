@@ -143,6 +143,9 @@ class ListSshKeys extends ListRecords
 
             // Create button positioned last (on the right)
             Actions\CreateAction::make()
+                ->label('New SSH Key')
+                ->modalHeading('Create SSH Key')
+                ->icon('heroicon-o-plus')
                 ->mutateFormDataUsing(function (array $data): array {
                     // Set defaults if needed
                     $data['active'] = $data['active'] ?? true;
