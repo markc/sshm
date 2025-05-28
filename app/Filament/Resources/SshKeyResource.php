@@ -264,7 +264,8 @@ class SshKeyResource extends Resource
                             }
                         }),
                 ]),
-            ]);
+            ])
+            ->defaultPaginationPageOption(5);
     }
 
     public static function getRelations(): array
@@ -278,7 +279,6 @@ class SshKeyResource extends Resource
     {
         return [
             'index' => Pages\ListSshKeys::route('/'),
-            'create' => Pages\CreateSshKey::route('/create'),
             'edit' => Pages\EditSshKey::route('/{record}/edit'),
         ];
     }

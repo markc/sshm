@@ -156,7 +156,15 @@ class ListSshHosts extends ListRecords
                 ->icon('heroicon-o-cog-6-tooth'),
 
             // Create button positioned last (on the right)
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->mutateFormDataUsing(function (array $data): array {
+                    // Set defaults if needed
+                    $data['port'] = $data['port'] ?? 22;
+                    $data['user'] = $data['user'] ?? 'root';
+                    $data['active'] = $data['active'] ?? true;
+
+                    return $data;
+                }),
         ];
     }
 }

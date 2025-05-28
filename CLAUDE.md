@@ -285,3 +285,277 @@ The README.md has been completely rewritten to provide a thorough understanding 
 - Integration of all recent feature enhancements and UI improvements
 
 This documentation approach ensures users understand both the potential and responsibilities that come with using a web-based SSH management tool.
+
+## Desktop Mode Implementation
+
+The SSH Manager now includes a "Desktop Mode" feature that allows the application to run without authentication requirements, suitable for trusted desktop environments.
+
+### Implementation Details:
+
+1. **Environment Configuration**:
+   - Created `.env.desktop` file with `DESKTOP_MODE=true` and desktop user settings
+   - Added desktop mode configuration to `config/app.php`
+
+2. **Custom Authentication**:
+   - Created `DesktopAuthenticate` middleware that auto-creates and logs in the desktop user
+   - Modified `AdminPanelProvider` to conditionally apply authentication based on mode
+   - When desktop mode is enabled, the login page is completely bypassed
+
+3. **Mode Management**:
+   - Created `desktop-mode.sh` script for easy mode switching
+   - Script preserves important settings like `APP_KEY` and `SSH_HOME_DIR` when switching
+   - Automatic backup/restore of `.env` files during mode changes
+
+4. **Console Command**:
+   - Added `sshm:create-desktop-user` artisan command to create the desktop user
+   - Desktop user is automatically created when enabling desktop mode
+
+5. **Usage**:
+   ```bash
+   # Enable desktop mode
+   ./desktop-mode.sh enable
+   
+   # Disable desktop mode  
+   ./desktop-mode.sh disable
+   
+   # Check current mode
+   ./desktop-mode.sh status
+   ```
+
+### Desktop File Configuration
+
+Created a desktop entry for SSHM application with the following configuration:
+```
+[Desktop Entry]
+Categories=Development;
+Comment=SSH Manager
+Exec=sh -c 'cd /home/markc/Dev/sshm && php artisan serve --host=127.0.0.1 --port=8888 & sleep 2 && chromium --app=http://localhost:8888/admin --window-size=1024,680 --window-position=center --user-data-dir="$HOME/.config/sshm-app"'
+Icon=alienarena
+Name=SSHM
+NoDisplay=false
+Path=
+StartupNotify=true
+StartupWMClass=chromium-browser
+Terminal=false
+TerminalOptions=
+Type=Application
+Version=1.0
+X-KDE-SubstituteUID=false
+X-KDE-Username=
+```
+
+Key aspects of the desktop file:
+- Launches Laravel development server on localhost:8888
+- Opens Chromium in app mode without browser chrome
+- Sets specific window size (1024x680) and centers it
+- Uses a dedicated user data directory for the app (`~/.config/sshm-app`)
+- Uses alienarena icon for visual identification
+- Can be launched from application menu or desktop
+
+Location: `~/.local/share/applications/sshm.desktop`
+
+This feature is ideal for single-user desktop installations where authentication overhead is unnecessary, while maintaining all SSH management functionality.
+
+## Recent UI/UX Updates
+
+1. **Default Table Pagination**: Changed from 10 to 5 rows per page for all tables to provide a more compact view
+2. **Collapsible Sidebar**: Changed to `sidebarFullyCollapsibleOnDesktop()` so sidebar defaults to closed state
+3. **Modal Creation**: "New SSH Host" and "New SSH Key" now use popup modals instead of separate pages for a smoother workflow
+
+## Development Environment
+
+### Prerequisites
+- **PHP 8.2+** with extensions: OpenSSL, PDO, Mbstring, Tokenizer, XML, Ctype, JSON, BCMath
+- **Composer** for PHP dependency management
+- **Node.js 18+** and **NPM** for frontend asset compilation
+- **SQLite** database (included in most PHP installations)
+
+### Step-by-Step Installation
+
+1. **Repository Setup**: Clone the SSHM repository and navigate to the project directory. This downloads all source code and configuration files.
+
+2. **PHP Dependencies**: Run `composer install` to download and install all PHP packages including Laravel framework, Filament admin panel, and the Spatie SSH library for remote command execution.
+
+3. **Environment Configuration**: Copy the example environment file and generate a unique application key for encryption and security. This key protects session data and other sensitive information.
+
+4. **Database Initialization**: Create an SQLite database file and run migrations to set up tables for SSH hosts, keys, settings, and user management.
+
+5. **Admin User Creation**: Use the Filament command to create your first administrator account. You'll be prompted for name, email, and password.
+
+6. **Frontend Assets**: Install Node.js dependencies and compile CSS/JavaScript assets using Vite. This builds the modern admin interface.
+
+7. **Development Server**: Start Laravel's built-in development server on `localhost:8000`. The admin panel is accessible at `/admin`.
+
+## Continuous Integration
+
+This project includes comprehensive GitHub Actions workflows for automated testing and deployment:
+
+### Test Workflow (`.github/workflows/tests.yml`)
+- Runs on push to `main`/`develop` branches and pull requests
+- Tests against PHP 8.2 and 8.3
+- Executes full Pest test suite (149 tests, 482 assertions)
+- Includes Laravel Pint code formatting checks
+
+### Build Workflow (`.github/workflows/build.yml`)
+- Builds and compiles frontend assets
+- Runs database migrations
+- Runs Laravel Pint formatting checks
+- Executes complete test suite
+- Creates deployment artifacts
+
+### Code Quality Workflow (`.github/workflows/code-quality.yml`)
+- Dedicated workflow for code quality assurance
+- Laravel Pint formatting validation
+- PHP syntax checking
+- Composer validation and security audits
+
+**Test Coverage**: The application includes comprehensive test coverage:
+- **Unit Tests**: Models, Services, and Widgets (56 tests)
+- **Feature Tests**: Filament pages and resources (93 tests)
+- **Test Categories**: Database operations, UI interactions, form validation, security features
+
+All tests must pass before merge. The test suite covers:
+- SSH host and key management
+- Command execution functionality
+- Filament admin panel features
+- Widget functionality
+- Form validation and security
+- Database operations and migrations
+
+### Code Formatting
+
+This project uses **Laravel Pint** for consistent code formatting:
+
+```bash
+# Check code formatting
+./vendor/bin/pint --test
+
+# Apply code formatting fixes
+./vendor/bin/pint
+```
+
+The project includes a custom `pint.json` configuration with enhanced rules for:
+- Consistent spacing and concatenation
+- Import organization
+- Method chaining indentation
+- Trait management
+- Operator spacing
+
+### Pre-commit Hook
+
+To ensure code quality before commits, you can install the provided pre-commit hook:
+
+```bash
+# Install the pre-commit hook
+cp scripts/pre-commit-hook.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+The hook automatically runs:
+- Laravel Pint formatting checks
+- Full Pest test suite
+
+This prevents commits with formatting issues or failing tests.
+
+## Development Setup and Practices
+
+### Prerequisites
+- **PHP 8.2+** with extensions: OpenSSL, PDO, Mbstring, Tokenizer, XML, Ctype, JSON, BCMath
+- **Composer** for PHP dependency management
+- **Node.js 18+** and **NPM** for frontend asset compilation
+- **SQLite** database (included in most PHP installations)
+
+### Step-by-Step Development Installation
+
+1. **Repository Setup**: Clone the SSHM repository and navigate to the project directory. This downloads all source code and configuration files.
+
+2. **PHP Dependencies**: Run `composer install` to download and install all PHP packages including Laravel framework, Filament admin panel, and the Spatie SSH library for remote command execution.
+
+3. **Environment Configuration**: Copy the example environment file and generate a unique application key for encryption and security. This key protects session data and other sensitive information.
+
+4. **Database Initialization**: Create an SQLite database file and run migrations to set up tables for SSH hosts, keys, settings, and user management.
+
+5. **Admin User Creation**: Use the Filament command to create your first administrator account. You'll be prompted for name, email, and password.
+
+6. **Frontend Assets**: Install Node.js dependencies and compile CSS/JavaScript assets using Vite. This builds the modern admin interface.
+
+7. **Development Server**: Start Laravel's built-in development server on `localhost:8000`. The admin panel is accessible at `/admin`.
+
+### Continuous Integration
+
+This project includes comprehensive GitHub Actions workflows for automated testing and deployment:
+
+#### Test Workflow (`.github/workflows/tests.yml`)
+- Runs on push to `main`/`develop` branches and pull requests
+- Tests against PHP 8.2 and 8.3
+- Executes full Pest test suite (149 tests, 482 assertions)
+- Includes Laravel Pint code formatting checks
+
+#### Build Workflow (`.github/workflows/build.yml`)
+- Builds and compiles frontend assets
+- Runs database migrations
+- Runs Laravel Pint formatting checks
+- Executes complete test suite
+- Creates deployment artifacts
+
+#### Code Quality Workflow (`.github/workflows/code-quality.yml`)
+- Dedicated workflow for code quality assurance
+- Laravel Pint formatting validation
+- PHP syntax checking
+- Composer validation and security audits
+
+### Test Coverage
+
+The application includes comprehensive test coverage:
+- **Unit Tests**: Models, Services, and Widgets (56 tests)
+- **Feature Tests**: Filament pages and resources (93 tests)
+- **Test Categories**: Database operations, UI interactions, form validation, security features
+
+All tests must pass before merge. The test suite covers:
+- SSH host and key management
+- Command execution functionality
+- Filament admin panel features
+- Widget functionality
+- Form validation and security
+- Database operations and migrations
+
+### Code Formatting
+
+This project uses **Laravel Pint** for consistent code formatting:
+
+```bash
+# Check code formatting
+./vendor/bin/pint --test
+
+# Apply code formatting fixes
+./vendor/bin/pint
+```
+
+The project includes a custom `pint.json` configuration with enhanced rules for:
+- Consistent spacing and concatenation
+- Import organization
+- Method chaining indentation
+- Trait management
+- Operator spacing
+
+### Pre-commit Hook
+
+To ensure code quality before commits, you can install the provided pre-commit hook:
+
+```bash
+# Install the pre-commit hook
+cp scripts/pre-commit-hook.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+The hook automatically runs:
+- Laravel Pint formatting checks
+- Full Pest test suite
+
+This prevents commits with formatting issues or failing tests.
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

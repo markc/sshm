@@ -11,33 +11,27 @@
 
 SSH Manager (SSHM) is a sophisticated web-based SSH management application built with Laravel 12 and Filament 3.3. It provides a modern, intuitive interface for managing SSH connections, executing remote commands, and administering SSH configurations through your web browser.
 
-## Core Functionality
+## Core Features
 
-SSHM transforms command-line SSH operations into a user-friendly web interface, offering:
+- **Real-Time Command Execution**: Execute SSH commands with live streaming output
+- **Connection Management**: Store and organize SSH host configurations
+- **Key Management**: Generate, import, and manage SSH key pairs
+- **Advanced Debugging**: Verbose connection debugging for troubleshooting
+- **Dashboard Overview**: System status, statistics, and security reminders
+- **Desktop Mode**: Run without authentication on trusted systems
 
-**Command Execution Engine**: Execute SSH commands on remote servers with real-time streaming output, allowing you to see command results as they happen rather than waiting for completion. The interface supports both simple commands and complex multi-line scripts.
+## Quick Start
 
-**Connection Management**: Store and organize SSH host configurations with support for custom ports, usernames, and SSH key authentication. Switch between saved hosts or use custom connection details on-the-fly.
-
-**Key Management System**: Generate, import, and manage SSH key pairs with support for multiple key types (RSA, Ed25519, ECDSA). Keys are stored securely and can be synced to the filesystem automatically.
-
-**Advanced Debugging**: Built-in verbose debugging system that shows detailed connection information, authentication steps, and command execution flow for troubleshooting SSH issues.
-
-**Dashboard Overview**: Real-time system status showing SSH host counts, key statistics, package versions, and security reminders all in one centralized view.
-
-## Installation
-
-**Quick Start Tip**: For a complete PHP development environment, visit [php.new](https://php.new) which provides PHP, Laravel, and Composer in a ready-to-use package.
-
-<pre>
+```bash
 # Clone the repository
 git clone https://github.com/yourusername/sshm.git
 cd sshm
 
-# Install PHP dependencies
+# Install dependencies
 composer install
+npm install
 
-# Create environment file and generate app key
+# Set up environment
 cp .env.example .env
 php artisan key:generate
 
@@ -45,200 +39,83 @@ php artisan key:generate
 touch database/database.sqlite
 php artisan migrate
 
-# Create admin user (follow prompts)
+# Create admin user
 php artisan make:filament-user
 
-# Install and build frontend assets
-npm install
+# Build assets and start server
 npm run build
-
-# Start development server
 php artisan serve
 
-# Access admin panel at: http://localhost:8000/admin
-</pre>
-
-## Detailed Installation Steps
-
-### Prerequisites
-- **PHP 8.2+** with extensions: OpenSSL, PDO, Mbstring, Tokenizer, XML, Ctype, JSON, BCMath
-- **Composer** for PHP dependency management
-- **Node.js 18+** and **NPM** for frontend asset compilation
-- **SQLite** database (included in most PHP installations)
-
-### Step-by-Step Installation
-
-1. **Repository Setup**: Clone the SSHM repository and navigate to the project directory. This downloads all source code and configuration files.
-
-2. **PHP Dependencies**: Run `composer install` to download and install all PHP packages including Laravel framework, Filament admin panel, and the Spatie SSH library for remote command execution.
-
-3. **Environment Configuration**: Copy the example environment file and generate a unique application key for encryption and security. This key protects session data and other sensitive information.
-
-4. **Database Initialization**: Create an SQLite database file and run migrations to set up tables for SSH hosts, keys, settings, and user management.
-
-5. **Admin User Creation**: Use the Filament command to create your first administrator account. You'll be prompted for name, email, and password.
-
-6. **Frontend Assets**: Install Node.js dependencies and compile CSS/JavaScript assets using Vite. This builds the modern admin interface.
-
-7. **Development Server**: Start Laravel's built-in development server on `localhost:8000`. The admin panel is accessible at `/admin`.
-
-### Post-Installation Configuration
-
-Navigate to the **SSH Settings** page in the admin panel to configure:
-- **SSH Home Directory**: Set to your user's home directory (e.g., `/home/username`)
-- **Default SSH User**: Usually `root` or your username for remote connections
-- **Default Port**: Standard SSH port is 22
-- **Key Type**: Recommended to use `ed25519` for new keys
-- **Host Key Checking**: Disable for testing, enable for production security
+# Access at: http://localhost:8000/admin
+```
 
 ## Using SSH Manager
 
-### Dashboard Overview
-The dashboard provides immediate visibility into your SSH environment:
-- **System Versions**: Shows current Laravel, Filament, and Spatie SSH package versions
-- **SSH Statistics**: Real-time counts of configured hosts and managed keys with active/inactive status
-- **Security Reminders**: Important security considerations and best practices
+### Dashboard
+The dashboard provides immediate visibility into your SSH environment with system versions, host/key statistics, and security reminders.
 
 ### SSH Command Runner
-The heart of SSHM is the command execution interface:
-
-**Layout**: Split-screen design with command input on the left (50%) and controls on the right (50%)
-
-**Command Input**: Large textarea supporting multi-line commands, scripts, and complex operations
-
-**Host Selection**: Choose from saved SSH hosts or enter custom connection details (hostname, port, username, key file)
-
-**Execution Options**:
-- **Verbose Debug**: Enable detailed connection and execution logging
-- **Use Bash**: Wrap commands in interactive bash (`bash -ci`) for environment variable and alias access
-
-**Real-Time Output**: Commands stream results live with auto-scrolling terminal-style display
-
-**Connection Modes**:
-1. **Saved Hosts**: Select from pre-configured SSH connections
-2. **Custom Connection**: Enter connection details on-demand for one-time use
+Execute commands on remote servers with a split-screen interface:
+- **Left side**: Command input area for multi-line scripts
+- **Right side**: Host selection and execution options
+- **Real-time output**: See results as they stream from the server
+- **Debug mode**: Enable verbose logging for troubleshooting
+- **Bash mode**: Run commands in interactive bash environment
 
 ### SSH Host Management
-Organize and maintain your SSH connections:
-
-**Host Configuration**: Store hostname, port, username, SSH key assignments, and connection notes
-
-**Bulk Operations**: 
-- Test connectivity to multiple hosts
+- Store and organize SSH connection configurations
+- Test connectivity to verify host availability
 - Sync configurations to SSH config files
 - Import existing SSH configurations
-- Initialize SSH directory structures
-
-**Connection Testing**: Built-in connectivity verification with detailed error reporting
 
 ### SSH Key Management
-Comprehensive SSH key lifecycle management:
-
-**Key Generation**: Create new key pairs with selectable algorithms (RSA, Ed25519, ECDSA)
-
-**Key Import**: Import existing private/public key pairs from files or clipboard
-
-**Key Deployment**: Automatically sync keys to filesystem locations for SSH client use
-
-**Security Features**: View key fingerprints, manage key passphrases, and track key usage
+- Generate new key pairs (RSA, Ed25519, ECDSA)
+- Import existing keys from files
+- Deploy keys to filesystem automatically
+- View key fingerprints and metadata
 
 ### System Administration
-Administrative tools for SSH environment management:
+- Initialize SSH directory structure with proper permissions
+- Control SSH daemon service (start/stop/restart)
+- Sync between database and filesystem configurations
 
-**Directory Initialization**: Set up proper SSH directory structure (`~/.ssh/`) with correct permissions
+## Desktop Mode
 
-**Permission Management**: Ensure SSH files have secure permissions (700 for directories, 600 for private keys)
+For trusted desktop environments, you can run SSHM without authentication:
 
-**Service Control**: Start/stop/restart SSH daemon service on the local system
+```bash
+# Enable desktop mode
+./desktop-mode.sh enable
 
-**Configuration Sync**: Bidirectional sync between database storage and SSH configuration files
+# Disable desktop mode
+./desktop-mode.sh disable
+
+# Check current mode
+./desktop-mode.sh status
+```
+
+Desktop mode features:
+- Auto-login without credentials
+- No authentication screen
+- Preserves all settings when switching modes
+- Ideal for personal workstations
+
+## Configuration
+
+After installation, navigate to **SSH Settings** in the admin panel to configure:
+- SSH Home Directory (e.g., `/home/username`)
+- Default SSH User
+- Default Port (usually 22)
+- Default Key Type (ed25519 recommended)
+- Host Key Checking
 
 ## Security Considerations
 
-**CRITICAL**: SSHM allows arbitrary command execution on remote servers. This is extremely powerful but potentially dangerous.
-
-**Network Security**: Only run on localhost ( 127.0.0.1). Never expose to public networks or untrusted users.
-
-**Access Control**: Protect with strong authentication. Consider implementing IP restrictions and session timeouts.
-
-**Command Auditing**: All executed commands can be logged. Consider implementing command approval workflows for sensitive environments.
-
-**Key Security**: SSH private keys are stored in the database. Ensure database encryption and regular backups.
-
-**User Privileges**: Use dedicated SSH users with minimal required privileges rather than root access.
-
-**Input Validation**: Be cautious with special characters and command injection. Consider implementing command whitelisting for production use.
-
-## Continuous Integration
-
-This project includes comprehensive GitHub Actions workflows for automated testing and deployment:
-
-### Test Workflow (`.github/workflows/tests.yml`)
-- Runs on push to `main`/`develop` branches and pull requests
-- Tests against PHP 8.2 and 8.3
-- Executes full Pest test suite (149 tests, 482 assertions)
-- Includes Laravel Pint code formatting checks
-
-### Build Workflow (`.github/workflows/build.yml`)
-- Builds and compiles frontend assets
-- Runs database migrations
-- Runs Laravel Pint formatting checks
-- Executes complete test suite
-- Creates deployment artifacts
-
-### Code Quality Workflow (`.github/workflows/code-quality.yml`)
-- Dedicated workflow for code quality assurance
-- Laravel Pint formatting validation
-- PHP syntax checking
-- Composer validation and security audits
-
-**Test Coverage**: The application includes comprehensive test coverage:
-- **Unit Tests**: Models, Services, and Widgets (56 tests)
-- **Feature Tests**: Filament pages and resources (93 tests)
-- **Test Categories**: Database operations, UI interactions, form validation, security features
-
-All tests must pass before merge. The test suite covers:
-- SSH host and key management
-- Command execution functionality
-- Filament admin panel features
-- Widget functionality
-- Form validation and security
-- Database operations and migrations
-
-### Code Formatting
-
-This project uses **Laravel Pint** for consistent code formatting:
-
-```bash
-# Check code formatting
-./vendor/bin/pint --test
-
-# Apply code formatting fixes
-./vendor/bin/pint
-```
-
-The project includes a custom `pint.json` configuration with enhanced rules for:
-- Consistent spacing and concatenation
-- Import organization
-- Method chaining indentation
-- Trait management
-- Operator spacing
-
-### Pre-commit Hook
-
-To ensure code quality before commits, you can install the provided pre-commit hook:
-
-```bash
-# Install the pre-commit hook
-cp scripts/pre-commit-hook.sh .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
-```
-
-The hook automatically runs:
-- Laravel Pint formatting checks
-- Full Pest test suite
-
-This prevents commits with formatting issues or failing tests.
+- **Network**: Only run on localhost, never expose to public networks
+- **Access**: Use strong authentication and consider IP restrictions
+- **Commands**: Be aware that users can execute any command on remote servers
+- **Keys**: Private keys are stored in the database - ensure proper encryption
+- **Privileges**: Use dedicated SSH users with minimal required permissions
 
 ## License
 

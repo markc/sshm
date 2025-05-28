@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\DesktopAuthenticate;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -21,15 +22,14 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel = $panel
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->sidebarCollapsibleOnDesktop()
+            ->sidebarFullyCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -39,11 +39,19 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 \App\Filament\Widgets\SshStatsWidget::class,
                 \App\Filament\Widgets\SecurityNotesWidget::class,
-            ])
-            ->middleware([
+            ]);
+
+        // Check if desktop mode is enabled
+        $isDesktopMode = config('app.desktop_mode', false);
+
+        // Configure middleware based on mode
+        if ($isDesktopMode) {
+            // Desktop mode: Add desktop authentication middleware before other middleware
+            $panel->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
+                DesktopAuthenticate::class, // Auto-login middleware
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
@@ -51,8 +59,28 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->authMiddleware([
-                Authenticate::class,
-            ]);
+                ->authMiddleware([
+                    // No auth middleware needed - handled by DesktopAuthenticate
+                ]);
+        } else {
+            // Normal mode: Standard authentication
+            $panel->login()
+                ->middleware([
+                    EncryptCookies::class,
+                    AddQueuedCookiesToResponse::class,
+                    StartSession::class,
+                    AuthenticateSession::class,
+                    ShareErrorsFromSession::class,
+                    VerifyCsrfToken::class,
+                    SubstituteBindings::class,
+                    DisableBladeIconComponents::class,
+                    DispatchServingFilamentEvent::class,
+                ])
+                ->authMiddleware([
+                    Authenticate::class,
+                ]);
+        }
+
+        return $panel;
     }
 }

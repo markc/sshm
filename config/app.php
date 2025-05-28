@@ -123,4 +123,19 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Desktop Mode Configuration
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options control the desktop mode functionality,
+    | which allows the application to run without authentication when
+    | accessed from a desktop environment.
+    |
+    */
+
+    'desktop_mode' => env('DESKTOP_MODE', false),
+    'desktop_user_email' => env('DESKTOP_USER_EMAIL', 'desktop@sshm.local'),
+    'desktop_user_name' => env('DESKTOP_USER_NAME', 'Desktop User'),
+
 ];

@@ -214,7 +214,8 @@ class SshHostResource extends Resource
                             }
                         }),
                 ]),
-            ]);
+            ])
+            ->defaultPaginationPageOption(5);
     }
 
     public static function getRelations(): array
@@ -228,7 +229,6 @@ class SshHostResource extends Resource
     {
         return [
             'index' => Pages\ListSshHosts::route('/'),
-            'create' => Pages\CreateSshHost::route('/create'),
             'edit' => Pages\EditSshHost::route('/{record}/edit'),
         ];
     }

@@ -142,7 +142,13 @@ class ListSshKeys extends ListRecords
                 ->icon('heroicon-o-key'),
 
             // Create button positioned last (on the right)
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->mutateFormDataUsing(function (array $data): array {
+                    // Set defaults if needed
+                    $data['active'] = $data['active'] ?? true;
+
+                    return $data;
+                }),
         ];
     }
 }

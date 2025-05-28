@@ -15,9 +15,18 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        // Create default test user
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Create desktop user if in desktop mode
+        if (config('app.desktop_mode', false)) {
+            User::factory()->create([
+                'name' => config('app.desktop_user_name', 'Desktop User'),
+                'email' => config('app.desktop_user_email', 'desktop@sshm.local'),
+            ]);
+        }
     }
 }
