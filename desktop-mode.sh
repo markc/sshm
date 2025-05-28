@@ -53,14 +53,15 @@ enable_desktop_mode() {
     # Preserve APP_KEY from backup
     APP_KEY=$(grep "^APP_KEY=" .env.backup | cut -d '=' -f 2-)
     if [ -n "$APP_KEY" ]; then
-        sed -i "s/^APP_KEY=.*/APP_KEY=${APP_KEY}/" .env
+        # Use a different delimiter for sed to avoid issues with special characters
+        awk -v key="APP_KEY=$APP_KEY" '/^APP_KEY=/ {print key; next} {print}' .env > .env.tmp && mv .env.tmp .env
         echo -e "${GREEN}✓ Preserved APP_KEY${NC}"
     fi
     
     # Preserve SSH_HOME_DIR if set
     if grep -q "^SSH_HOME_DIR=" .env.backup; then
         SSH_HOME_DIR=$(grep "^SSH_HOME_DIR=" .env.backup | cut -d '=' -f 2-)
-        sed -i "s|^SSH_HOME_DIR=.*|SSH_HOME_DIR=${SSH_HOME_DIR}|" .env
+        awk -v key="SSH_HOME_DIR=$SSH_HOME_DIR" '/^SSH_HOME_DIR=/ {print key; next} {print}' .env > .env.tmp && mv .env.tmp .env
         echo -e "${GREEN}✓ Preserved SSH_HOME_DIR${NC}"
     fi
     

@@ -51,7 +51,7 @@ class AdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                DesktopAuthenticate::class, // Auto-login middleware
+                DesktopAuthenticate::class, // Auto-login middleware - MUST come before AuthenticateSession
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
@@ -60,8 +60,9 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
                 ->authMiddleware([
-                    // No auth middleware needed - handled by DesktopAuthenticate
-                ]);
+                    DesktopAuthenticate::class, // Also add here to ensure it runs on auth routes
+                ])
+                ->authGuard('web'); // Explicitly set the guard
         } else {
             // Normal mode: Standard authentication
             $panel->login()

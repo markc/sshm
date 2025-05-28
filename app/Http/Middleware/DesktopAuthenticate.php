@@ -28,7 +28,11 @@ class DesktopAuthenticate
                     ]
                 );
 
-                Auth::login($desktopUser);
+                // Use loginUsingId with remember = true to persist the session
+                Auth::loginUsingId($desktopUser->id, true);
+
+                // Regenerate session to ensure fresh auth state
+                $request->session()->regenerate();
             }
         }
 
