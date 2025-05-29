@@ -21,7 +21,7 @@
                 @if ($streamingOutput || ($commandOutput && $commandOutput['output']))
                     <div class="mt-2">
                         <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Output:</div>
-                        <pre id="streaming-output" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-100 dark:bg-gray-900 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-64 overflow-y-auto">{{ $isCommandRunning ? $streamingOutput : ($commandOutput['output'] ?? '') }}</pre>
+                        <pre id="streaming-output" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-100 dark:bg-gray-900 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-64 overflow-y-auto">{{ $streamingOutput ?: ($commandOutput['output'] ?? '') }}</pre>
                     </div>
                 @endif
                 

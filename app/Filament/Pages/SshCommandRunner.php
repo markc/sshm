@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Symfony\Component\Process\Process;
 
 class SshCommandRunner extends Page
 {
@@ -32,6 +33,17 @@ class SshCommandRunner extends Page
     public string $debugOutput = '';
 
     public bool $useBash = false;
+
+    public function mount(): void
+    {
+        // Initialize properties to ensure they're properly tracked by Livewire
+        $this->commandOutput = null;
+        $this->streamingOutput = '';
+        $this->isCommandRunning = false;
+        $this->debugOutput = '';
+    }
+
+    protected ?\Spatie\Ssh\Ssh $currentSshProcess = null;
 
     public ?string $selectedHost = null;
 
@@ -99,8 +111,25 @@ class SshCommandRunner extends Page
                                                 })
                                                 ->requiresConfirmation(false)
                                                 ->button()
-                                                ->extraAttributes(['class' => 'w-full mt-6']),
-                                        ]),
+                                                ->extraAttributes(['class' => 'w-full']),
+                                        ])->extraAttributes(['class' => 'mt-6']),
+
+                                        \Filament\Forms\Components\Actions::make([
+                                            \Filament\Forms\Components\Actions\Action::make('cancelCommand')
+                                                ->label('Cancel Command')
+                                                ->visible(fn () => $this->isCommandRunning)
+                                                ->icon('heroicon-o-x-circle')
+                                                ->iconPosition('before')
+                                                ->color('danger')
+                                                ->size('lg')
+                                                ->action(function () {
+                                                    $this->cancelCommand();
+                                                })
+                                                ->requiresConfirmation(false)
+                                                ->button()
+                                                ->extraAttributes(['class' => 'w-full']),
+                                        ])->visible(fn () => $this->isCommandRunning)
+                                            ->extraAttributes(['class' => 'mt-2']),
                                     ])
                                         ->columnSpan(1),
                                 ]),
@@ -151,13 +180,23 @@ class SshCommandRunner extends Page
 
     public function runCommand(): void
     {
-        $this->validate([
-            'command' => 'required|string',
-            'selectedHost' => $this->useCustomConnection ? 'nullable' : 'required',
-            'hostname' => $this->useCustomConnection ? 'required|string' : 'nullable',
-            'port' => $this->useCustomConnection ? 'required|numeric' : 'nullable',
-            'username' => $this->useCustomConnection ? 'required|string' : 'nullable',
-        ]);
+        try {
+            $this->validate([
+                'command' => 'required|string',
+                'selectedHost' => $this->useCustomConnection ? 'nullable' : 'required',
+                'hostname' => $this->useCustomConnection ? 'required|string' : 'nullable',
+                'port' => $this->useCustomConnection ? 'required|numeric' : 'nullable',
+                'username' => $this->useCustomConnection ? 'required|string' : 'nullable',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Notification::make()
+                ->title('Validation Error')
+                ->body($e->validator->errors()->first())
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         // Reset output and set running state
         $this->streamingOutput = '';
@@ -182,13 +221,15 @@ class SshCommandRunner extends Page
                     $tempHost,
                     $this->command,
                     function ($type, $line) {
-                        $this->streamingOutput .= $line;
-                        $this->dispatch('outputUpdated', $this->streamingOutput);
+                        if ($type === Process::OUT || $type === 'out') {
+                            $this->streamingOutput .= $line;
+                            $this->dispatch('outputUpdated', [$this->streamingOutput]);
+                        }
                     },
                     $this->verboseDebug,
                     function ($debugLine) {
                         $this->debugOutput .= $debugLine . "\n";
-                        $this->dispatch('debugUpdated', $this->debugOutput);
+                        $this->dispatch('debugUpdated', [$this->debugOutput]);
                     },
                     $this->useBash
                 );
@@ -198,13 +239,15 @@ class SshCommandRunner extends Page
                     $host,
                     $this->command,
                     function ($type, $line) {
-                        $this->streamingOutput .= $line;
-                        $this->dispatch('outputUpdated', $this->streamingOutput);
+                        if ($type === Process::OUT || $type === 'out') {
+                            $this->streamingOutput .= $line;
+                            $this->dispatch('outputUpdated', [$this->streamingOutput]);
+                        }
                     },
                     $this->verboseDebug,
                     function ($debugLine) {
                         $this->debugOutput .= $debugLine . "\n";
-                        $this->dispatch('debugUpdated', $this->debugOutput);
+                        $this->dispatch('debugUpdated', [$this->debugOutput]);
                     },
                     $this->useBash
                 );
@@ -212,6 +255,24 @@ class SshCommandRunner extends Page
 
             $this->isCommandRunning = false;
             $this->commandOutput = $result;
+
+            // Always update streaming output with final result to ensure UI displays something
+            if (! empty($result['output'])) {
+                $this->streamingOutput = $result['output'];
+                $this->dispatch('outputUpdated', [$this->streamingOutput]);
+            }
+
+            // Debug: Log what we're getting
+            if ($this->verboseDebug && ! empty($this->debugOutput)) {
+                $this->debugOutput .= "\n=== Final State ===\n";
+                $this->debugOutput .= 'Streaming Output Length: ' . strlen($this->streamingOutput) . "\n";
+                $this->debugOutput .= 'Result Output Length: ' . strlen($result['output']) . "\n";
+                $this->debugOutput .= 'Command Output Set: ' . ($this->commandOutput ? 'Yes' : 'No') . "\n";
+                $this->dispatch('debugUpdated', [$this->debugOutput]);
+            }
+
+            // Force Livewire to refresh the UI
+            $this->dispatch('$refresh');
 
             if ($result['success']) {
                 Notification::make()
@@ -229,10 +290,13 @@ class SshCommandRunner extends Page
             $this->isCommandRunning = false;
             $this->commandOutput = [
                 'success' => false,
-                'output' => '',
+                'output' => $this->streamingOutput,
                 'error' => $e->getMessage(),
                 'exit_code' => -1,
             ];
+
+            // Force Livewire to refresh the UI
+            $this->dispatch('$refresh');
 
             Notification::make()
                 ->danger()
@@ -240,6 +304,29 @@ class SshCommandRunner extends Page
                 ->body($e->getMessage())
                 ->send();
         }
+    }
+
+    public function cancelCommand(): void
+    {
+        $this->isCommandRunning = false;
+        $this->streamingOutput .= "\n\n--- Command cancelled by user ---\n";
+        $this->dispatch('outputUpdated', [$this->streamingOutput]);
+
+        $this->commandOutput = [
+            'success' => false,
+            'output' => $this->streamingOutput,
+            'error' => 'Command cancelled by user',
+            'exit_code' => -1,
+        ];
+
+        // Force Livewire to update the UI
+        $this->dispatch('$refresh');
+
+        Notification::make()
+            ->title('Command Cancelled')
+            ->body('The SSH command was cancelled')
+            ->warning()
+            ->send();
     }
 
     public function toggleConnectionMode(): void
