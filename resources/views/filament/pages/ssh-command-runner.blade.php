@@ -18,16 +18,19 @@
                             </svg>
                         </span>
                     </h3>
-                @elseif ($commandOutput)
-                    <h3 class="text-lg font-medium {{ $commandOutput['success'] ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
-                        {{ $commandOutput['success'] ? 'Command Completed (Exit Code: ' . $commandOutput['exit_code'] . ')' : 'Command Failed (Exit Code: ' . $commandOutput['exit_code'] . ')' }}
-                    </h3>
                 @endif
                 
                 @if ($streamingOutput || ($commandOutput && $commandOutput['output']))
-                    <div class="mt-2">
-                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Output:</div>
-                        <pre id="streaming-output" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-100 dark:bg-gray-900 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-64 overflow-y-auto">{{ $streamingOutput ?: ($commandOutput['output'] ?? '') }}</pre>
+                    <div class="{{ $isCommandRunning ? 'mt-2' : '' }}">
+                        <pre id="streaming-output" class="block w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-100 dark:bg-gray-900 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-64 overflow-y-auto">{{ $streamingOutput ?: ($commandOutput['output'] ?? '') }}</pre>
+                    </div>
+                @endif
+
+                @if ($commandOutput)
+                    <div class="mt-4">
+                        <h3 class="text-lg font-medium {{ $commandOutput['success'] ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                            {{ $commandOutput['success'] ? 'Command Completed (Exit Code: ' . $commandOutput['exit_code'] . ')' : 'Command Failed (Exit Code: ' . $commandOutput['exit_code'] . ')' }}
+                        </h3>
                     </div>
                 @endif
                 
