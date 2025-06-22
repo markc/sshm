@@ -116,40 +116,36 @@ class SshCommandRunner extends Page
                             Grid::make(3)
                                 ->schema([
                                     // Run Command button
-                                    Group::make([
-                                        Actions::make([
-                                            Action::make('runCommand')
-                                                ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
-                                                ->disabled(fn () => $this->isCommandRunning)
-                                                ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
-                                                ->iconPosition('before')
-                                                ->color('primary')
-                                                ->size('lg')
-                                                ->extraAttributes(fn () => $this->isCommandRunning ? ['class' => 'animate-pulse'] : [])
-                                                ->action(function () {
-                                                    $this->runCommand();
-                                                })
-                                                ->requiresConfirmation(false)
-                                                ->button()
-                                                ->extraAttributes(['class' => 'w-full']),
-                                        ]),
+                                    Actions::make([
+                                        Action::make('runCommand')
+                                            ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
+                                            ->disabled(fn () => $this->isCommandRunning)
+                                            ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
+                                            ->iconPosition('before')
+                                            ->color('primary')
+                                            ->size('lg')
+                                            ->extraAttributes(fn () => $this->isCommandRunning ? ['class' => 'animate-pulse'] : [])
+                                            ->action(function () {
+                                                $this->runCommand();
+                                            })
+                                            ->requiresConfirmation(false)
+                                            ->button()
+                                            ->extraAttributes(['class' => 'w-full']),
 
-                                        Actions::make([
-                                            Action::make('cancelCommand')
-                                                ->label('Cancel Command')
-                                                ->visible(fn () => $this->isCommandRunning)
-                                                ->icon('heroicon-o-x-circle')
-                                                ->iconPosition('before')
-                                                ->color('danger')
-                                                ->size('lg')
-                                                ->action(function () {
-                                                    $this->cancelCommand();
-                                                })
-                                                ->requiresConfirmation(false)
-                                                ->button()
-                                                ->extraAttributes(['class' => 'w-full']),
-                                        ])->visible(fn () => $this->isCommandRunning),
-                                    ])
+                                        Action::make('cancelCommand')
+                                            ->label('Cancel Command')
+                                            ->visible(fn () => $this->isCommandRunning)
+                                            ->icon('heroicon-o-x-circle')
+                                            ->iconPosition('before')
+                                            ->color('danger')
+                                            ->size('lg')
+                                            ->action(function () {
+                                                $this->cancelCommand();
+                                            })
+                                            ->requiresConfirmation(false)
+                                            ->button()
+                                            ->extraAttributes(['class' => 'w-full']),
+                                    ])->visible(fn () => ! $this->isCommandRunning || $this->isCommandRunning)
                                         ->columnSpan(1),
 
                                     // Debug toggle
@@ -164,7 +160,7 @@ class SshCommandRunner extends Page
                                         ->inline(true)
                                         ->columnSpan(1),
                                 ])
-                                ->extraAttributes(['class' => 'mt-4']),
+                                ->extraAttributes(['class' => 'mt-4 place-items-center']),
                         ])
                             ->columnSpan(1),
                     ]),
