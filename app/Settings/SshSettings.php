@@ -18,6 +18,10 @@ class SshSettings
 
     public bool $strict_host_checking = false;
 
+    public ?string $default_ssh_host = null;
+
+    public ?string $default_ssh_key = null;
+
     public function __construct(array $attributes = [])
     {
         if (isset($attributes['home_dir'])) {
