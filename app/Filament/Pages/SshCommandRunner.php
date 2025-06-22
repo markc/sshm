@@ -59,38 +59,50 @@ class SshCommandRunner extends Page
     {
         return $schema
             ->components([
-                // Command input and host selection at the top
                 Grid::make(2)
                     ->schema([
-                        // Command textarea - left side
-                        Textarea::make('command')
-                            ->label('Enter SSH Command(s)')
-                            ->required()
-                            ->rows(5)
-                            ->placeholder('Enter SSH command(s) to execute...')
-                            ->extraAttributes(['style' => 'resize: none;'])
-                            ->columnSpan(1),
-
-                        // SSH Host selector - right side
-                        Select::make('selectedHost')
-                            ->label('Select SSH Host')
-                            ->options(function () {
-                                return SshHost::where('active', true)
-                                    ->pluck('name', 'id')
-                                    ->toArray();
-                            })
-                            ->afterStateUpdated(function ($state) {
-                                if ($state) {
-                                    $this->selectedHost = $state;
-                                }
-                            })
-                            ->columnSpan(1),
-                    ]),
-
-                // Run command button and controls
-                Grid::make(3)
-                    ->schema([
+                        // Left side - Command textarea with toggles underneath
                         Group::make([
+                            Textarea::make('command')
+                                ->label('Enter SSH Command(s)')
+                                ->required()
+                                ->rows(5)
+                                ->placeholder('Enter SSH command(s) to execute...')
+                                ->extraAttributes(['style' => 'resize: none;']),
+
+                            // Toggle buttons under the textarea
+                            Grid::make(2)
+                                ->schema([
+                                    Toggle::make('verboseDebug')
+                                        ->label('Verbose Debug')
+                                        ->inline(true)
+                                        ->columnSpan(1),
+
+                                    Toggle::make('useBash')
+                                        ->label('Use bash')
+                                        ->inline(true)
+                                        ->columnSpan(1),
+                                ])
+                                ->extraAttributes(['class' => 'mt-4']),
+                        ])
+                            ->columnSpan(1),
+
+                        // Right side - SSH Host selector with Run button underneath
+                        Group::make([
+                            Select::make('selectedHost')
+                                ->label('Select SSH Host')
+                                ->options(function () {
+                                    return SshHost::where('active', true)
+                                        ->pluck('name', 'id')
+                                        ->toArray();
+                                })
+                                ->afterStateUpdated(function ($state) {
+                                    if ($state) {
+                                        $this->selectedHost = $state;
+                                    }
+                                }),
+
+                            // Run command button under the host selector
                             Actions::make([
                                 Action::make('runCommand')
                                     ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
@@ -106,8 +118,10 @@ class SshCommandRunner extends Page
                                     ->requiresConfirmation(false)
                                     ->button()
                                     ->extraAttributes(['class' => 'w-full']),
-                            ]),
+                            ])
+                                ->extraAttributes(['class' => 'mt-4']),
 
+                            // Cancel button (shown when command is running)
                             Actions::make([
                                 Action::make('cancelCommand')
                                     ->label('Cancel Command')
@@ -122,25 +136,12 @@ class SshCommandRunner extends Page
                                     ->requiresConfirmation(false)
                                     ->button()
                                     ->extraAttributes(['class' => 'w-full']),
-                            ])->visible(fn () => $this->isCommandRunning),
+                            ])
+                                ->visible(fn () => $this->isCommandRunning)
+                                ->extraAttributes(['class' => 'mt-2']),
                         ])
                             ->columnSpan(1),
-
-                        Group::make([
-                            Toggle::make('verboseDebug')
-                                ->label('Verbose Debug')
-                                ->inline(true),
-
-                            Toggle::make('useBash')
-                                ->label('Use bash')
-                                ->inline(true),
-                        ])
-                            ->columnSpan(1),
-
-                        Group::make()
-                            ->columnSpan(1), // Empty space for balance
                     ]),
-
             ]);
     }
 
