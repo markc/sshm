@@ -31,7 +31,7 @@ class SshHostResource extends Resource
 {
     protected static ?string $model = SshHost::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-server';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-server';
 
     protected static ?string $navigationLabel = 'SSH Hosts';
 

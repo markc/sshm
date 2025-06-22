@@ -22,7 +22,7 @@ use Symfony\Component\Process\Process;
 
 class SshCommandRunner extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-command-line';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-command-line';
 
     protected static ?string $navigationLabel = 'SSH Commands';
 

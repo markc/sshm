@@ -13,7 +13,7 @@ use Filament\Schemas\Schema;
 
 class SshSettings extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-cog';
 
     protected static ?string $navigationLabel = 'SSH Settings';
 
