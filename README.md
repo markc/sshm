@@ -1,8 +1,10 @@
 # SSH Manager (SSHM)
 
-[![Tests](https://github.com/markc/sshm/actions/workflows/tests.yml/badge.svg)](https://github.com/markc/sshm/actions/workflows/tests.yml)
-[![Build & Deploy](https://github.com/markc/sshm/actions/workflows/build.yml/badge.svg)](https://github.com/markc/sshm/actions/workflows/build.yml)
-[![Code Quality](https://github.com/markc/sshm/actions/workflows/code-quality.yml/badge.svg)](https://github.com/markc/sshm/actions/workflows/code-quality.yml)
+[![CI Pipeline](https://github.com/markc/sshm/actions/workflows/ci.yml/badge.svg)](https://github.com/markc/sshm/actions/workflows/ci.yml)
+[![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777BB4.svg?style=flat&logo=php)](https://php.net)
+[![Laravel 12](https://img.shields.io/badge/Laravel-12-FF2D20.svg?style=flat&logo=laravel)](https://laravel.com)
+[![Filament 4](https://img.shields.io/badge/Filament-4.0-FFAA00.svg?style=flat&logo=filament)](https://filamentphp.com)
+[![Tests](https://img.shields.io/badge/tests-136%20passed-green.svg?style=flat)](https://github.com/markc/sshm/actions/workflows/ci.yml)
 
 ## ⚠️ **CRITICAL SECURITY WARNING** ⚠️
 **THIS APPLICATION SHOULD ONLY BE USED ON LOCALHOST (127.0.0.1) AND NEVER ON A PUBLIC OR EXPOSED IP ADDRESS. IT ALLOWS ARBITRARY COMMAND EXECUTION ON REMOTE SERVERS THROUGH A WEB INTERFACE.**
