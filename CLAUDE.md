@@ -9,18 +9,43 @@
 
 ## Git Workflow Requirements
 
-**MANDATORY**: All commits to this repository MUST go through the git aliases workflow:
+**⚠️ CRITICAL: NEVER USE DIRECT GIT COMMANDS ⚠️**
+
+**MANDATORY**: All commits to this repository MUST go through the git aliases workflow. **NEVER** use direct git commands like `git add`, `git commit`, `git push`, etc.
+
+### Required Workflow:
 
 1. **Setup aliases** (run once): `@scripts/setup-git-aliases.sh`
 2. **Before making any changes**: `git start [branch-name]`
 3. **After completing changes**: `git finish [commit-message]`
 4. **After PR merge**: Always merge to main using `gh` CLI, then checkout main locally
 
+### Why This Workflow is Mandatory:
+
+- **Automatic code formatting**: `git finish` runs Laravel Pint before committing
+- **Consistent branching**: Ensures proper feature branch creation from latest main
+- **Automated PR creation**: Creates pull requests with proper titles and descriptions
+- **Auto-merge setup**: Enables automatic merging when CI passes
+- **Branch cleanup**: Automatically cleans up feature branches after merge
+- **Consistent commit messages**: Uses standardized commit message format with Claude Code attribution
+
 ### Git Aliases Available
 - `git start [branch-name]` - Start new feature branch (auto-generates if not provided)
 - `git finish [msg]` - Auto-commit, create PR, and prepare for merge (smart message generation)
 - `git check` - Check repository status and merged branches
 - `git cleanup` - Clean up old merged branches (run weekly)
+
+### What `git finish` Does Automatically:
+1. Runs `./vendor/bin/pint` to fix code formatting
+2. Stages all changes with `git add .`
+3. Creates commit with proper message format and Claude Code attribution
+4. Pushes to feature branch with `git push -u origin [branch]`
+5. Creates GitHub PR with auto-generated title and description
+6. Enables auto-merge with squash and branch deletion
+7. Switches back to main and pulls latest changes
+8. Cleans up local feature branch
+
+**NEVER bypass this workflow** - it ensures code quality, consistent formatting, and proper CI integration.
 
 ### CI/CD Pipeline
 The repository includes a single CI runner (`.github/workflows/ci.yml`) that:
