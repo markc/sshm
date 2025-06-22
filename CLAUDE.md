@@ -1,4 +1,40 @@
-Please create a Laravel 12 project integrated with Filament 3.2.
+# SSH Manager (SSHM) - Claude AI Development Instructions
+
+## Documentation Structure
+
+**IMPORTANT**: All documentation must follow this structure:
+
+- **End-user documentation**: Add all how-to-use guides, tutorials, and user manuals to the `docs/` folder
+- **Developer documentation**: Add all how-to-build guides, technical specifications, and development plans to the `plan/` folder
+
+## Git Workflow Requirements
+
+**MANDATORY**: All commits to this repository MUST go through the git aliases workflow:
+
+1. **Setup aliases** (run once): `@scripts/setup-git-aliases.sh`
+2. **Before making any changes**: `git start [branch-name]`
+3. **After completing changes**: `git finish [commit-message]`
+4. **After PR merge**: Always merge to main using `gh` CLI, then checkout main locally
+
+### Git Aliases Available
+- `git start [branch-name]` - Start new feature branch (auto-generates if not provided)
+- `git finish [msg]` - Auto-commit, create PR, and prepare for merge (smart message generation)
+- `git check` - Check repository status and merged branches
+- `git cleanup` - Clean up old merged branches (run weekly)
+
+### CI/CD Pipeline
+The repository includes a single CI runner (`.github/workflows/ci.yml`) that:
+- Runs on PHP 8.4 only
+- Executes Laravel Pint code formatting checks
+- Runs the complete Pest test suite (149 tests, 482 assertions)
+- Triggers only on merge to main branch
+- Uploads artifacts on failure
+
+**CI runs once per merge to main to ensure production quality.**
+
+## Original Project Requirements
+
+Please create a Laravel 12 project integrated with Filament 4.0.
 
 The core functionality should be to execute SSH commands on a remote server from within the Filament admin panel.
 
@@ -7,7 +43,7 @@ Here are the specific requirements:
 1.  **Project Setup:**
 
     - Initialize a standard Laravel 12 project.
-    - Install Filament 3.2 and configure it for basic usage (e.g., create an admin user).
+    - Install Filament 4.0 and configure it for basic usage (e.g., create an admin user).
     - Install the `spatie/ssh` package.
 
 2.  **Filament Resource or Page:**
@@ -75,6 +111,13 @@ The expected output is the necessary code files and instructions to set up and r
 This prompt should give the code-generating AI a clear understanding of what you need to build a functional example project. Remember to review and adapt the generated code as needed for your specific environment and security requirements.
 
 ## Implementation Summary
+
+**IMPORTANT: This project uses Filament v4.0** - The latest major version with breaking changes from v3.x. Key differences include:
+- Form methods use `Form` instead of `Schema` 
+- Required PHP 8.2+ and Laravel v11.28+
+- Files are private by default
+- Table filters are deferred by default
+- Layout components consume one grid column by default
 
 The SSH Manager (SSHM) project has been successfully implemented with the following components:
 

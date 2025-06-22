@@ -2,29 +2,46 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\SshHostResource\Pages;
+use App\Filament\Resources\SshHostResource\Pages\EditSshHost;
+use App\Filament\Resources\SshHostResource\Pages\ListSshHosts;
 use App\Models\SshHost;
-use Filament\Forms;
-use Filament\Forms\Form;
+use App\Services\SshService;
+use App\Settings\SshSettings;
+use Exception;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class SshHostResource extends Resource
 {
     protected static ?string $model = SshHost::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-server';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-server';
 
     protected static ?string $navigationLabel = 'SSH Hosts';
 
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
+        return $schema
+            ->components([
+                TextInput::make('name')
                     ->required()
                     ->unique(ignorable: fn ($record) => $record)
                     ->maxLength(255)
@@ -32,14 +49,14 @@ class SshHostResource extends Resource
                     ->placeholder('Enter a unique name for this SSH host')
                     ->helperText('This will be used as the Host entry in your SSH config'),
 
-                Forms\Components\TextInput::make('hostname')
+                TextInput::make('hostname')
                     ->required()
                     ->maxLength(255)
                     ->label('Hostname/IP')
                     ->placeholder('example.com or 192.168.1.100')
                     ->helperText('The hostname or IP address of the remote server'),
 
-                Forms\Components\TextInput::make('port')
+                TextInput::make('port')
                     ->required()
                     ->numeric()
                     ->default(22)
@@ -49,7 +66,7 @@ class SshHostResource extends Resource
                     ->placeholder('22')
                     ->helperText('The SSH port of the remote server'),
 
-                Forms\Components\TextInput::make('user')
+                TextInput::make('user')
                     ->required()
                     ->default('root')
                     ->maxLength(255)
@@ -57,7 +74,7 @@ class SshHostResource extends Resource
                     ->placeholder('root')
                     ->helperText('The username to use when connecting to the remote server'),
 
-                Forms\Components\Select::make('identity_file')
+                Select::make('identity_file')
                     ->relationship('sshKey', 'name')
                     ->nullable()
                     ->searchable()
@@ -66,7 +83,7 @@ class SshHostResource extends Resource
                     ->placeholder('Select an SSH key')
                     ->helperText('The SSH key to use for authentication (optional)'),
 
-                Forms\Components\Toggle::make('active')
+                Toggle::make('active')
                     ->required()
                     ->default(true)
                     ->label('Active')
@@ -78,76 +95,76 @@ class SshHostResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->label('Host Name')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('hostname')
+                TextColumn::make('hostname')
                     ->label('Hostname/IP')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('port')
+                TextColumn::make('port')
                     ->label('Port')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user')
+                TextColumn::make('user')
                     ->label('Username')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('identity_file')
+                TextColumn::make('identity_file')
                     ->label('SSH Key')
                     ->searchable(),
-                Tables\Columns\IconColumn::make('active')
+                IconColumn::make('active')
                     ->label('Active')
                     ->boolean(),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('active')
+                SelectFilter::make('active')
                     ->options([
                         '1' => 'Active',
                         '0' => 'Inactive',
                     ]),
             ])
             ->actions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
-                    Tables\Actions\Action::make('testConnection')
+                ActionGroup::make([
+                    EditAction::make(),
+                    DeleteAction::make(),
+                    Action::make('testConnection')
                         ->label('Test Connection')
                         ->icon('heroicon-o-wifi')
                         ->color('success')
-                        ->action(function (SshHost $record, App\Services\SshService $sshService) {
+                        ->action(function (SshHost $record, SshService $sshService) {
                             $result = $sshService->executeCommand($record, 'echo "Connection successful"');
 
                             if ($result['success']) {
-                                Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->success()
                                     ->title('Connection Successful')
                                     ->body('Successfully connected to ' . $record->hostname)
                                     ->send();
                             } else {
-                                Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->danger()
                                     ->title('Connection Failed')
                                     ->body($result['error'] ?: 'Failed to connect to ' . $record->hostname)
                                     ->send();
                             }
                         }),
-                    Tables\Actions\Action::make('syncToConfig')
+                    Action::make('syncToConfig')
                         ->label('Sync to Config')
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
-                        ->action(function (SshHost $record, App\Services\SshService $sshService) {
+                        ->action(function (SshHost $record, SshService $sshService) {
                             $configContent = $record->toSshConfigFormat();
-                            $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+                            $homePath = app(SshSettings::class)->getHomeDir();
                             $configPath = "{$homePath}/.ssh/config.d/{$record->name}";
 
                             try {
@@ -158,13 +175,13 @@ class SshHostResource extends Resource
                                 file_put_contents($configPath, $configContent);
                                 chmod($configPath, 0600);
 
-                                Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->success()
                                     ->title('Config Synced')
                                     ->body('Host configuration has been saved to ' . $configPath)
                                     ->send();
-                            } catch (\Exception $e) {
-                                Filament\Notifications\Notification::make()
+                            } catch (Exception $e) {
+                                Notification::make()
                                     ->danger()
                                     ->title('Sync Failed')
                                     ->body($e->getMessage())
@@ -174,14 +191,14 @@ class SshHostResource extends Resource
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('syncAllToConfig')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('syncAllToConfig')
                         ->label('Sync Selected to Config')
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records, App\Services\SshService $sshService) {
-                            $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+                        ->action(function (Collection $records, SshService $sshService) {
+                            $homePath = app(SshSettings::class)->getHomeDir();
                             $configDPath = "{$homePath}/.ssh/config.d";
 
                             try {
@@ -200,13 +217,13 @@ class SshHostResource extends Resource
                                     $syncCount++;
                                 }
 
-                                Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->success()
                                     ->title('Configs Synced')
                                     ->body("Synced {$syncCount} host configurations to {$configDPath}")
                                     ->send();
-                            } catch (\Exception $e) {
-                                Filament\Notifications\Notification::make()
+                            } catch (Exception $e) {
+                                Notification::make()
                                     ->danger()
                                     ->title('Sync Failed')
                                     ->body($e->getMessage())
@@ -228,8 +245,8 @@ class SshHostResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSshHosts::route('/'),
-            'edit' => Pages\EditSshHost::route('/{record}/edit'),
+            'index' => ListSshHosts::route('/'),
+            'edit' => EditSshHost::route('/{record}/edit'),
         ];
     }
 }

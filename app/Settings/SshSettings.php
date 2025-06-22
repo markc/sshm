@@ -2,6 +2,10 @@
 
 namespace App\Settings;
 
+use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
 class SshSettings
 {
     public string $home_dir = '/home/user';
@@ -82,7 +86,7 @@ class SshSettings
         // Save to database if possible
         try {
             $this->saveToDatabase();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Fallback to .env file
             $this->saveToEnvFile();
         }
@@ -90,8 +94,8 @@ class SshSettings
 
     protected function saveToDatabase(): void
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('settings')) {
-            throw new \Exception('Settings table does not exist');
+        if (! Schema::hasTable('settings')) {
+            throw new Exception('Settings table does not exist');
         }
 
         $settings = [
@@ -103,7 +107,7 @@ class SshSettings
         ];
 
         foreach ($settings as $setting) {
-            \Illuminate\Support\Facades\DB::table('settings')
+            DB::table('settings')
                 ->updateOrInsert(
                     ['group' => $setting['group'], 'name' => $setting['name']],
                     ['value' => json_encode($setting['value'])]

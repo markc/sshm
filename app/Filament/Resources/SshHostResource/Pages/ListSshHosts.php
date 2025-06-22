@@ -5,6 +5,10 @@ namespace App\Filament\Resources\SshHostResource\Pages;
 use App\Filament\Resources\SshHostResource;
 use App\Services\SshService;
 use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Forms\Components\Radio;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
@@ -12,12 +16,27 @@ class ListSshHosts extends ListRecords
 {
     protected static string $resource = SshHostResource::class;
 
+    public function hasResourceBreadcrumbs(): bool
+    {
+        return false;
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return '';
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             // Dropdown menu for all actions except Create
-            Actions\ActionGroup::make([
-                Actions\Action::make('initSshDirectory')
+            ActionGroup::make([
+                Action::make('initSshDirectory')
                     ->label('Initialize SSH Directory')
                     ->icon('heroicon-o-folder-plus')
                     ->color('success')
@@ -40,7 +59,7 @@ class ListSshHosts extends ListRecords
                         }
                     }),
 
-                Actions\Action::make('updatePermissions')
+                Action::make('updatePermissions')
                     ->label('Update SSH Permissions')
                     ->icon('heroicon-o-lock-closed')
                     ->color('warning')
@@ -63,7 +82,7 @@ class ListSshHosts extends ListRecords
                         }
                     }),
 
-                Actions\Action::make('importFromConfig')
+                Action::make('importFromConfig')
                     ->label('Import from Config Files')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('gray')
@@ -88,7 +107,7 @@ class ListSshHosts extends ListRecords
                         }
                     }),
 
-                Actions\Action::make('syncAllToConfig')
+                Action::make('syncAllToConfig')
                     ->label('Sync All to Config')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
@@ -111,15 +130,15 @@ class ListSshHosts extends ListRecords
                         }
                     }),
 
-                Actions\Action::make('sshServiceControl')
+                Action::make('sshServiceControl')
                     ->label('SSH Service Control')
                     ->icon('heroicon-o-power')
                     ->color('danger')
                     ->modalHeading('SSH Service Control')
                     ->modalDescription('Start or stop the SSH service on this server.')
                     ->modalSubmitActionLabel('Apply')
-                    ->form([
-                        \Filament\Forms\Components\Radio::make('action')
+                    ->schema([
+                        Radio::make('action')
                             ->label('Select Action')
                             ->required()
                             ->options([
@@ -156,11 +175,11 @@ class ListSshHosts extends ListRecords
                 ->icon('heroicon-o-cog-6-tooth'),
 
             // Create button positioned last (on the right)
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->label('New SSH Host')
                 ->modalHeading('Create SSH Host')
                 ->icon('heroicon-o-plus')
-                ->mutateFormDataUsing(function (array $data): array {
+                ->mutateDataUsing(function (array $data): array {
                     // Set defaults if needed
                     $data['port'] = $data['port'] ?? 22;
                     $data['user'] = $data['user'] ?? 'root';

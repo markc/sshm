@@ -4,6 +4,8 @@ namespace App\Filament\Widgets;
 
 use App\Models\SshHost;
 use App\Models\SshKey;
+use Composer\InstalledVersions;
+use Exception;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -54,13 +56,13 @@ class SshStatsWidget extends BaseWidget
     private function getPackageVersion(string $package): string
     {
         try {
-            if (\Composer\InstalledVersions::isInstalled($package)) {
-                $version = \Composer\InstalledVersions::getVersion($package);
+            if (InstalledVersions::isInstalled($package)) {
+                $version = InstalledVersions::getVersion($package);
 
                 // Remove 'v' prefix and any dev/beta suffixes for cleaner display
                 return preg_replace('/^v?(\d+\.\d+\.\d+).*/', '$1', $version) ?: 'Unknown';
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Fallback if composer metadata is not available
         }
 
