@@ -227,7 +227,7 @@ These UI improvements should be maintained in future rebuilds of the project to 
 
 ## Important Filament API Notes
 
-1. **Table Refreshing**: Use `$this->resetTable()` method to refresh tables after data changes, not `refresh()` or `refreshTable()` which do not exist in Filament v3.
+1. **Table Refreshing**: Use `$this->resetTable()` method to refresh tables after data changes, not `refresh()` or `refreshTable()` which do not exist in Filament v4.
 
 ## Dashboard Customizations
 

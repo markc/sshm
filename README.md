@@ -11,7 +11,7 @@
 
 ## What is SSH Manager?
 
-SSH Manager (SSHM) is a sophisticated web-based SSH management application built with Laravel 12 and Filament 3.3. It provides a modern, intuitive interface for managing SSH connections, executing remote commands, and administering SSH configurations through your web browser.
+SSH Manager (SSHM) is a sophisticated web-based SSH management application built with Laravel 12 and Filament 4.0. It provides a modern, intuitive interface for managing SSH connections, executing remote commands, and administering SSH configurations through your web browser.
 
 ## Core Features
 
