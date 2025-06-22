@@ -22,7 +22,7 @@
                 
                 @if ($streamingOutput || ($commandOutput && $commandOutput['output']))
                     <div class="{{ $isCommandRunning ? 'mt-2' : '' }}">
-                        <pre id="streaming-output" class="block w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-100 dark:bg-gray-900 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-64 overflow-y-auto">{{ $streamingOutput ?: ($commandOutput['output'] ?? '') }}</pre>
+                        <pre id="streaming-output" class="my-6 block w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-100 dark:bg-gray-900 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-64 overflow-y-auto">{{ $streamingOutput ?: ($commandOutput['output'] ?? '') }}</pre>
                     </div>
                 @endif
 
