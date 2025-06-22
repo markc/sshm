@@ -70,103 +70,75 @@ class SshCommandRunner extends Page
     {
         return $schema
             ->components([
+                // Command input and host selection at the top
                 Grid::make(2)
                     ->schema([
-                        // Left side - 50% width for command textarea
+                        // Command textarea - left side
+                        Textarea::make('command')
+                            ->label('Enter SSH Command(s)')
+                            ->required()
+                            ->rows(5)
+                            ->placeholder('Enter SSH command(s) to execute...')
+                            ->extraAttributes(['style' => 'resize: none;'])
+                            ->columnSpan(1),
+
+                        // SSH Host selector - right side
+                        Select::make('selectedHost')
+                            ->label('Select SSH Host')
+                            ->options(function () {
+                                return SshHost::where('active', true)
+                                    ->pluck('name', 'id')
+                                    ->toArray();
+                            })
+                            ->hidden(fn () => $this->useCustomConnection)
+                            ->afterStateUpdated(function ($state) {
+                                if ($state) {
+                                    $this->selectedHost = $state;
+                                }
+                            })
+                            ->columnSpan(1),
+                    ]),
+
+                // Run command button and controls
+                Grid::make(3)
+                    ->schema([
                         Group::make([
-                            Textarea::make('command')
-                                ->label('Enter SSH Command(s)')
-                                ->required()
-                                ->rows(8)
-                                ->placeholder('Enter SSH command(s) to execute...')
-                                ->extraAttributes(['style' => 'resize: none;']),
+                            Actions::make([
+                                Action::make('runCommand')
+                                    ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
+                                    ->disabled(fn () => $this->isCommandRunning)
+                                    ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
+                                    ->iconPosition('before')
+                                    ->color('primary')
+                                    ->size('lg')
+                                    ->extraAttributes(fn () => $this->isCommandRunning ? ['class' => 'animate-pulse'] : [])
+                                    ->action(function () {
+                                        $this->runCommand();
+                                    })
+                                    ->requiresConfirmation(false)
+                                    ->button()
+                                    ->extraAttributes(['class' => 'w-full']),
+                            ]),
+
+                            Actions::make([
+                                Action::make('cancelCommand')
+                                    ->label('Cancel Command')
+                                    ->visible(fn () => $this->isCommandRunning)
+                                    ->icon('heroicon-o-x-circle')
+                                    ->iconPosition('before')
+                                    ->color('danger')
+                                    ->size('lg')
+                                    ->action(function () {
+                                        $this->cancelCommand();
+                                    })
+                                    ->requiresConfirmation(false)
+                                    ->button()
+                                    ->extraAttributes(['class' => 'w-full']),
+                            ])->visible(fn () => $this->isCommandRunning),
                         ])
                             ->columnSpan(1),
 
-                        // Right side - 50% width for controls
                         Group::make([
-                            // SSH Host selector and Run button on same line
-                            Grid::make(2)
-                                ->schema([
-                                    Select::make('selectedHost')
-                                        ->label('Select SSH Host')
-                                        ->options(function () {
-                                            return SshHost::where('active', true)
-                                                ->pluck('name', 'id')
-                                                ->toArray();
-                                        })
-                                        ->hidden(fn () => $this->useCustomConnection)
-                                        ->afterStateUpdated(function ($state) {
-                                            if ($state) {
-                                                $this->selectedHost = $state;
-                                            }
-                                        })
-                                        ->columnSpan(1),
-
-                                    Group::make([
-                                        Actions::make([
-                                            Action::make('runCommand')
-                                                ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
-                                                ->disabled(fn () => $this->isCommandRunning)
-                                                ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
-                                                ->iconPosition('before')
-                                                ->color('primary')
-                                                ->size('lg')
-                                                ->extraAttributes(fn () => $this->isCommandRunning ? ['class' => 'animate-pulse'] : [])
-                                                ->action(function () {
-                                                    $this->runCommand();
-                                                })
-                                                ->requiresConfirmation(false)
-                                                ->button()
-                                                ->extraAttributes(['class' => 'w-full']),
-                                        ])->extraAttributes(['class' => 'mt-6']),
-
-                                        Actions::make([
-                                            Action::make('cancelCommand')
-                                                ->label('Cancel Command')
-                                                ->visible(fn () => $this->isCommandRunning)
-                                                ->icon('heroicon-o-x-circle')
-                                                ->iconPosition('before')
-                                                ->color('danger')
-                                                ->size('lg')
-                                                ->action(function () {
-                                                    $this->cancelCommand();
-                                                })
-                                                ->requiresConfirmation(false)
-                                                ->button()
-                                                ->extraAttributes(['class' => 'w-full']),
-                                        ])->visible(fn () => $this->isCommandRunning)
-                                            ->extraAttributes(['class' => 'mt-2']),
-                                    ])
-                                        ->columnSpan(1),
-                                ]),
-
-                            // Custom connection fields (stacked vertically in the right column)
-                            TextInput::make('hostname')
-                                ->label('Hostname')
-                                ->required()
-                                ->hidden(fn () => ! $this->useCustomConnection)
-                                ->extraAttributes(['class' => 'mb-2']),
-
-                            TextInput::make('port')
-                                ->label('Port')
-                                ->numeric()
-                                ->default('22')
-                                ->hidden(fn () => ! $this->useCustomConnection)
-                                ->extraAttributes(['class' => 'mb-2']),
-
-                            TextInput::make('username')
-                                ->label('Username')
-                                ->default('root')
-                                ->hidden(fn () => ! $this->useCustomConnection)
-                                ->extraAttributes(['class' => 'mb-2']),
-
-                            TextInput::make('identityFile')
-                                ->label('Identity File (optional)')
-                                ->placeholder('~/.ssh/id_ed25519')
-                                ->hidden(fn () => ! $this->useCustomConnection)
-                                ->extraAttributes(['class' => 'mb-4']),
-
                             Toggle::make('verboseDebug')
                                 ->label('Verbose Debug')
                                 ->inline(true),
@@ -176,7 +148,40 @@ class SshCommandRunner extends Page
                                 ->inline(true),
                         ])
                             ->columnSpan(1),
+
+                        Group::make()
+                            ->columnSpan(1), // Empty space for balance
                     ]),
+
+                // Custom connection fields (only shown when custom connection is enabled)
+                Grid::make(4)
+                    ->schema([
+                        TextInput::make('hostname')
+                            ->label('Hostname')
+                            ->required()
+                            ->hidden(fn () => ! $this->useCustomConnection)
+                            ->columnSpan(1),
+
+                        TextInput::make('port')
+                            ->label('Port')
+                            ->numeric()
+                            ->default('22')
+                            ->hidden(fn () => ! $this->useCustomConnection)
+                            ->columnSpan(1),
+
+                        TextInput::make('username')
+                            ->label('Username')
+                            ->default('root')
+                            ->hidden(fn () => ! $this->useCustomConnection)
+                            ->columnSpan(1),
+
+                        TextInput::make('identityFile')
+                            ->label('Identity File (optional)')
+                            ->placeholder('~/.ssh/id_ed25519')
+                            ->hidden(fn () => ! $this->useCustomConnection)
+                            ->columnSpan(1),
+                    ])
+                    ->hidden(fn () => ! $this->useCustomConnection),
             ]);
     }
 

@@ -1,7 +1,13 @@
 <x-filament-panels::page>
     <div class="space-y-6">
+        <!-- Form at the top -->
+        <div class="space-y-4">
+            {{ $this->form }}
+        </div>
+
+        <!-- Command output below the form -->
         @if ($isCommandRunning || $streamingOutput || $commandOutput)
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4 mb-4">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
                 @if ($isCommandRunning)
                     <h3 class="text-lg font-medium text-blue-600 dark:text-blue-400">
                         Command Running... 
@@ -34,12 +40,9 @@
             </div>
         @endif
 
-        <div class="space-y-4">
-            {{ $this->form }}
-        </div>
-
+        <!-- Debug output at the bottom -->
         @if ($verboseDebug && ($debugOutput || $isCommandRunning))
-            <div class="bg-gray-50 dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg p-4 mt-4 border border-gray-300 dark:border-gray-600">
+            <div class="bg-gray-50 dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg p-4 border border-gray-300 dark:border-gray-600">
                 <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
                     🐛 Verbose Debug Output
                 </h4>
