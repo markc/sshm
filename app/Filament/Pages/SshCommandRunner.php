@@ -87,9 +87,10 @@ class SshCommandRunner extends Page
                             ->columnSpan(1),
                     ]),
 
-                // Run command button and controls
+                // Run command button and toggle controls in a single horizontal row
                 Grid::make(3)
                     ->schema([
+                        // Run Command button
                         Group::make([
                             Actions::make([
                                 Action::make('runCommand')
@@ -126,19 +127,17 @@ class SshCommandRunner extends Page
                         ])
                             ->columnSpan(1),
 
-                        Group::make([
-                            Toggle::make('verboseDebug')
-                                ->label('Verbose Debug')
-                                ->inline(true),
-
-                            Toggle::make('useBash')
-                                ->label('Use bash')
-                                ->inline(true),
-                        ])
+                        // Verbose Debug toggle
+                        Toggle::make('verboseDebug')
+                            ->label('Verbose Debug')
+                            ->inline(true)
                             ->columnSpan(1),
 
-                        Group::make()
-                            ->columnSpan(1), // Empty space for balance
+                        // Use bash toggle
+                        Toggle::make('useBash')
+                            ->label('Use bash')
+                            ->inline(true)
+                            ->columnSpan(1),
                     ]),
 
             ]);
