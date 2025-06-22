@@ -1,7 +1,7 @@
 <x-filament-panels::page>
-    <div class="space-y-16">
+    <div class="grid gap-6 lg:gap-8">
         <!-- Form section with Filament styling -->
-        <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 mb-12">
+        <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="fi-section-header flex flex-col gap-3 px-6 py-4">
                 <div class="flex items-center gap-3">
                     <div class="grid flex-1 gap-1">
