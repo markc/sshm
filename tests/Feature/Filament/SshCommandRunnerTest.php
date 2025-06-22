@@ -216,40 +216,10 @@ describe('SshCommandRunner Feature Tests', function () {
             ->assertSet('command', 'pwd');
     });
 
-    it('can toggle connection mode', function () {
-        $component = Livewire::test(SshCommandRunner::class);
-
-        expect($component->get('useCustomConnection'))->toBeFalse();
-
-        $component->call('toggleConnectionMode');
-
-        expect($component->get('useCustomConnection'))->toBeTrue();
-    });
-
     it('tracks command running state', function () {
         $component = Livewire::test(SshCommandRunner::class);
 
         expect($component->get('isCommandRunning'))->toBeFalse();
-    });
-
-    it('can use custom connection settings', function () {
-        Livewire::test(SshCommandRunner::class)
-            ->call('toggleConnectionMode')
-            ->assertSee('Hostname')
-            ->assertSee('Port')
-            ->assertSee('Username')
-            ->assertSee('Identity File (optional)');
-    });
-
-    it('validates custom connection fields when enabled', function () {
-        Livewire::test(SshCommandRunner::class)
-            ->call('toggleConnectionMode')
-            ->fillForm([
-                'command' => 'ls -la',
-                'hostname' => '',
-            ])
-            ->call('runCommand')
-            ->assertHasErrors(['hostname']);
     });
 
     it('shows error when no SSH hosts exist', function () {

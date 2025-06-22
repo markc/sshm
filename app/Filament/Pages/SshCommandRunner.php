@@ -8,7 +8,6 @@ use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -56,16 +55,6 @@ class SshCommandRunner extends Page
 
     public ?string $command = null;
 
-    public ?string $hostname = null;
-
-    public ?string $port = '22';
-
-    public ?string $username = 'root';
-
-    public ?string $identityFile = null;
-
-    public bool $useCustomConnection = false;
-
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -90,7 +79,6 @@ class SshCommandRunner extends Page
                                     ->pluck('name', 'id')
                                     ->toArray();
                             })
-                            ->hidden(fn () => $this->useCustomConnection)
                             ->afterStateUpdated(function ($state) {
                                 if ($state) {
                                     $this->selectedHost = $state;
@@ -153,35 +141,6 @@ class SshCommandRunner extends Page
                             ->columnSpan(1), // Empty space for balance
                     ]),
 
-                // Custom connection fields (only shown when custom connection is enabled)
-                Grid::make(4)
-                    ->schema([
-                        TextInput::make('hostname')
-                            ->label('Hostname')
-                            ->required()
-                            ->hidden(fn () => ! $this->useCustomConnection)
-                            ->columnSpan(1),
-
-                        TextInput::make('port')
-                            ->label('Port')
-                            ->numeric()
-                            ->default('22')
-                            ->hidden(fn () => ! $this->useCustomConnection)
-                            ->columnSpan(1),
-
-                        TextInput::make('username')
-                            ->label('Username')
-                            ->default('root')
-                            ->hidden(fn () => ! $this->useCustomConnection)
-                            ->columnSpan(1),
-
-                        TextInput::make('identityFile')
-                            ->label('Identity File (optional)')
-                            ->placeholder('~/.ssh/id_ed25519')
-                            ->hidden(fn () => ! $this->useCustomConnection)
-                            ->columnSpan(1),
-                    ])
-                    ->hidden(fn () => ! $this->useCustomConnection),
             ]);
     }
 
@@ -194,10 +153,7 @@ class SshCommandRunner extends Page
     {
         $this->validate([
             'command' => 'required|string',
-            'selectedHost' => $this->useCustomConnection ? 'nullable' : 'required',
-            'hostname' => $this->useCustomConnection ? 'required|string' : 'nullable',
-            'port' => $this->useCustomConnection ? 'required|numeric' : 'nullable',
-            'username' => $this->useCustomConnection ? 'required|string' : 'nullable',
+            'selectedHost' => 'required',
         ]);
 
         // Reset output and set running state
@@ -209,51 +165,23 @@ class SshCommandRunner extends Page
         $sshService = app(SshService::class);
 
         try {
-            if ($this->useCustomConnection) {
-                // Create a temporary host for custom connection
-                $tempHost = new SshHost([
-                    'name' => 'temp_' . time(),
-                    'hostname' => $this->hostname,
-                    'port' => $this->port,
-                    'user' => $this->username,
-                    'identity_file' => $this->identityFile,
-                ]);
-
-                $result = $sshService->executeCommandWithStreaming(
-                    $tempHost,
-                    $this->command,
-                    function ($type, $line) {
-                        if ($type === Process::OUT || $type === 'out') {
-                            $this->streamingOutput .= $line;
-                            $this->dispatch('outputUpdated', [$this->streamingOutput]);
-                        }
-                    },
-                    $this->verboseDebug,
-                    function ($debugLine) {
-                        $this->debugOutput .= $debugLine . "\n";
-                        $this->dispatch('debugUpdated', [$this->debugOutput]);
-                    },
-                    $this->useBash
-                );
-            } else {
-                $host = SshHost::findOrFail($this->selectedHost);
-                $result = $sshService->executeCommandWithStreaming(
-                    $host,
-                    $this->command,
-                    function ($type, $line) {
-                        if ($type === Process::OUT || $type === 'out') {
-                            $this->streamingOutput .= $line;
-                            $this->dispatch('outputUpdated', [$this->streamingOutput]);
-                        }
-                    },
-                    $this->verboseDebug,
-                    function ($debugLine) {
-                        $this->debugOutput .= $debugLine . "\n";
-                        $this->dispatch('debugUpdated', [$this->debugOutput]);
-                    },
-                    $this->useBash
-                );
-            }
+            $host = SshHost::findOrFail($this->selectedHost);
+            $result = $sshService->executeCommandWithStreaming(
+                $host,
+                $this->command,
+                function ($type, $line) {
+                    if ($type === Process::OUT || $type === 'out') {
+                        $this->streamingOutput .= $line;
+                        $this->dispatch('outputUpdated', [$this->streamingOutput]);
+                    }
+                },
+                $this->verboseDebug,
+                function ($debugLine) {
+                    $this->debugOutput .= $debugLine . "\n";
+                    $this->dispatch('debugUpdated', [$this->debugOutput]);
+                },
+                $this->useBash
+            );
 
             $this->isCommandRunning = false;
             $this->commandOutput = $result;
@@ -329,25 +257,5 @@ class SshCommandRunner extends Page
             ->body('The SSH command was cancelled')
             ->warning()
             ->send();
-    }
-
-    public function toggleConnectionMode(): void
-    {
-        $this->useCustomConnection = ! $this->useCustomConnection;
-        $this->selectedHost = null;
-        $this->hostname = null;
-        $this->port = '22';
-        $this->username = 'root';
-        $this->identityFile = null;
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('toggleConnection')
-                ->label(fn () => $this->useCustomConnection ? 'Use Saved Host' : 'Use Custom Connection')
-                ->icon('heroicon-o-arrow-path')
-                ->action(fn () => $this->toggleConnectionMode()),
-        ];
     }
 }
