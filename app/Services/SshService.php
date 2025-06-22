@@ -166,11 +166,11 @@ class SshService
             } else {
                 // In normal mode, filter out job control messages (but preserve bash wrapping if used)
                 if ($useBash) {
-                    // If using bash, apply filtering after bash execution
-                    $wrappedCommand = "{$finalCommand} 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'";
+                    // If using bash, apply filtering after bash execution but preserve exit code
+                    $wrappedCommand = "({$finalCommand}) 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'; exit \${PIPESTATUS[0]}";
                 } else {
-                    // Standard filtering for non-bash commands
-                    $wrappedCommand = "bash -c '{$finalCommand}' 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'";
+                    // Standard filtering for non-bash commands but preserve exit code
+                    $wrappedCommand = "(bash -c '{$finalCommand}') 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'; exit \${PIPESTATUS[0]}";
                 }
                 $process = $ssh->execute($wrappedCommand);
             }
