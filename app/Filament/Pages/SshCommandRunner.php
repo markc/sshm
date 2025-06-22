@@ -188,23 +188,13 @@ class SshCommandRunner extends Page
 
     public function runCommand(): void
     {
-        try {
-            $this->validate([
-                'command' => 'required|string',
-                'selectedHost' => $this->useCustomConnection ? 'nullable' : 'required',
-                'hostname' => $this->useCustomConnection ? 'required|string' : 'nullable',
-                'port' => $this->useCustomConnection ? 'required|numeric' : 'nullable',
-                'username' => $this->useCustomConnection ? 'required|string' : 'nullable',
-            ]);
-        } catch (ValidationException $e) {
-            Notification::make()
-                ->title('Validation Error')
-                ->body($e->validator->errors()->first())
-                ->danger()
-                ->send();
-
-            return;
-        }
+        $this->validate([
+            'command' => 'required|string',
+            'selectedHost' => $this->useCustomConnection ? 'nullable' : 'required',
+            'hostname' => $this->useCustomConnection ? 'required|string' : 'nullable',
+            'port' => $this->useCustomConnection ? 'required|numeric' : 'nullable',
+            'username' => $this->useCustomConnection ? 'required|string' : 'nullable',
+        ]);
 
         // Reset output and set running state
         $this->streamingOutput = '';
