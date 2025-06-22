@@ -37,7 +37,7 @@ describe('SshCommandRunner Feature Tests', function () {
 
     it('shows active SSH hosts in dropdown', function () {
         $test = Livewire::test(SshCommandRunner::class);
-        
+
         // Try different form names to find the correct one
         try {
             $test->assertFormFieldExists('selectedHost');
@@ -50,11 +50,12 @@ describe('SshCommandRunner Feature Tests', function () {
                 } catch (Exception $e3) {
                     // If all fail, just check that we can see the host name
                     $test->assertSee($this->activeHost->name);
+
                     return;
                 }
             }
         }
-        
+
         $test->assertSee($this->activeHost->name);
     });
 
