@@ -1,8 +1,25 @@
 <x-filament-panels::page>
     <div class="space-y-8">
-        <!-- Form at the top -->
-        <div class="space-y-4">
-            {{ $this->form }}
+        <!-- Form section with Filament styling -->
+        <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+            <div class="fi-section-header flex flex-col gap-3 px-6 py-4">
+                <div class="flex items-center gap-3">
+                    <div class="grid flex-1 gap-1">
+                        <h3 class="fi-section-header-heading text-base font-semibold text-gray-950 dark:text-white">
+                            SSH Command Execution
+                        </h3>
+                        <p class="fi-section-header-description text-sm text-gray-500 dark:text-gray-400">
+                            Enter commands to execute on remote SSH hosts
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="fi-section-content-ctn border-t border-gray-200 dark:border-white/10">
+                <div class="fi-section-content p-6">
+                    {{ $this->form }}
+                </div>
+            </div>
         </div>
 
         <!-- Command output section with Filament styling -->
