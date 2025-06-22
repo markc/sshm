@@ -62,83 +62,86 @@ class SshCommandRunner extends Page
                 // Command input and host selection at the top
                 Grid::make(2)
                     ->schema([
-                        // Command textarea - left side
+                        // Left side - Command textarea
                         Textarea::make('command')
-                            ->label('Enter SSH Command(s)')
+                            ->hiddenLabel()
                             ->required()
-                            ->rows(5)
+                            ->rows(4)
                             ->placeholder('Enter SSH command(s) to execute...')
                             ->extraAttributes(['style' => 'resize: none;'])
                             ->columnSpan(1),
 
-                        // SSH Host selector - right side
-                        Select::make('selectedHost')
-                            ->label('Select SSH Host')
-                            ->options(function () {
-                                return SshHost::where('active', true)
-                                    ->pluck('name', 'id')
-                                    ->toArray();
-                            })
-                            ->afterStateUpdated(function ($state) {
-                                if ($state) {
-                                    $this->selectedHost = $state;
-                                }
-                            })
-                            ->columnSpan(1),
-                    ]),
-
-                // Run command button and controls
-                Grid::make(3)
-                    ->schema([
+                        // Right side - SSH Host selector with controls below
                         Group::make([
-                            Actions::make([
-                                Action::make('runCommand')
-                                    ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
-                                    ->disabled(fn () => $this->isCommandRunning)
-                                    ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
-                                    ->iconPosition('before')
-                                    ->color('primary')
-                                    ->size('lg')
-                                    ->extraAttributes(fn () => $this->isCommandRunning ? ['class' => 'animate-pulse'] : [])
-                                    ->action(function () {
-                                        $this->runCommand();
-                                    })
-                                    ->requiresConfirmation(false)
-                                    ->button()
-                                    ->extraAttributes(['class' => 'w-full']),
-                            ]),
+                            Select::make('selectedHost')
+                                ->hiddenLabel()
+                                ->placeholder('Select SSH Host')
+                                ->options(function () {
+                                    return SshHost::where('active', true)
+                                        ->pluck('name', 'id')
+                                        ->toArray();
+                                })
+                                ->afterStateUpdated(function ($state) {
+                                    if ($state) {
+                                        $this->selectedHost = $state;
+                                    }
+                                }),
 
-                            Actions::make([
-                                Action::make('cancelCommand')
-                                    ->label('Cancel Command')
-                                    ->visible(fn () => $this->isCommandRunning)
-                                    ->icon('heroicon-o-x-circle')
-                                    ->iconPosition('before')
-                                    ->color('danger')
-                                    ->size('lg')
-                                    ->action(function () {
-                                        $this->cancelCommand();
-                                    })
-                                    ->requiresConfirmation(false)
-                                    ->button()
-                                    ->extraAttributes(['class' => 'w-full']),
-                            ])->visible(fn () => $this->isCommandRunning),
+                            // Run Command button and toggles in a single horizontal row
+                            Grid::make(3)
+                                ->schema([
+                                    // Run Command button
+                                    Group::make([
+                                        Actions::make([
+                                            Action::make('runCommand')
+                                                ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
+                                                ->disabled(fn () => $this->isCommandRunning)
+                                                ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
+                                                ->iconPosition('before')
+                                                ->color('primary')
+                                                ->size('lg')
+                                                ->extraAttributes(fn () => $this->isCommandRunning ? ['class' => 'animate-pulse'] : [])
+                                                ->action(function () {
+                                                    $this->runCommand();
+                                                })
+                                                ->requiresConfirmation(false)
+                                                ->button()
+                                                ->extraAttributes(['class' => 'w-full']),
+                                        ]),
+
+                                        Actions::make([
+                                            Action::make('cancelCommand')
+                                                ->label('Cancel Command')
+                                                ->visible(fn () => $this->isCommandRunning)
+                                                ->icon('heroicon-o-x-circle')
+                                                ->iconPosition('before')
+                                                ->color('danger')
+                                                ->size('lg')
+                                                ->action(function () {
+                                                    $this->cancelCommand();
+                                                })
+                                                ->requiresConfirmation(false)
+                                                ->button()
+                                                ->extraAttributes(['class' => 'w-full']),
+                                        ])->visible(fn () => $this->isCommandRunning),
+                                    ])
+                                        ->columnSpan(1),
+
+                                    // Verbose Debug toggle
+                                    Toggle::make('verboseDebug')
+                                        ->label('Verbose Debug')
+                                        ->inline(true)
+                                        ->columnSpan(1),
+
+                                    // Use bash toggle
+                                    Toggle::make('useBash')
+                                        ->label('Use bash')
+                                        ->inline(true)
+                                        ->columnSpan(1),
+                                ])
+                                ->extraAttributes(['class' => 'mt-4']),
                         ])
                             ->columnSpan(1),
-
-                        Group::make([
-                            Toggle::make('verboseDebug')
-                                ->label('Verbose Debug')
-                                ->inline(true),
-
-                            Toggle::make('useBash')
-                                ->label('Use bash')
-                                ->inline(true),
-                        ])
-                            ->columnSpan(1),
-
-                        Group::make()
-                            ->columnSpan(1), // Empty space for balance
                     ]),
 
             ]);
