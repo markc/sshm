@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,7 +50,7 @@ class SshKey extends Model
         $process = Process::run(implode(' ', array_map('escapeshellarg', $command)));
 
         if (! $process->successful()) {
-            throw new \Exception('Failed to generate SSH key: ' . $process->errorOutput());
+            throw new Exception('Failed to generate SSH key: ' . $process->errorOutput());
         }
 
         $privateKey = file_get_contents($keyPath);
@@ -80,7 +81,7 @@ class SshKey extends Model
         unlink($tempFile);
 
         if (! $process->successful()) {
-            throw new \Exception('Failed to get fingerprint: ' . $process->errorOutput());
+            throw new Exception('Failed to get fingerprint: ' . $process->errorOutput());
         }
 
         return trim($process->output());

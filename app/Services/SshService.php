@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\SshHost;
 use App\Models\SshKey;
+use App\Settings\SshSettings;
 use Exception;
 use Illuminate\Support\Facades\Process;
 use Spatie\Ssh\Ssh;
@@ -221,7 +222,7 @@ class SshService
     public function initSshDirectory(): array
     {
         try {
-            $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+            $homePath = app(SshSettings::class)->getHomeDir();
             $sshPath = "{$homePath}/.ssh";
             $configPath = "{$sshPath}/config";
             $configDPath = "{$sshPath}/config.d";
@@ -279,7 +280,7 @@ class SshService
     public function updatePermissions(): array
     {
         try {
-            $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+            $homePath = app(SshSettings::class)->getHomeDir();
             $sshPath = "{$homePath}/.ssh";
 
             // Find all directories and set permissions to 700
@@ -372,7 +373,7 @@ class SshService
     public function syncHostsToConfigFiles(): array
     {
         try {
-            $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+            $homePath = app(SshSettings::class)->getHomeDir();
             $configDPath = "{$homePath}/.ssh/config.d";
 
             // Make sure the directory exists
@@ -416,7 +417,7 @@ class SshService
     public function syncKeysToKeyFiles(): array
     {
         try {
-            $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+            $homePath = app(SshSettings::class)->getHomeDir();
             $sshPath = "{$homePath}/.ssh";
 
             // Make sure the directory exists
@@ -454,7 +455,7 @@ class SshService
     public function importHostsFromConfigFiles(): array
     {
         try {
-            $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+            $homePath = app(SshSettings::class)->getHomeDir();
             $configDPath = "{$homePath}/.ssh/config.d";
 
             if (! is_dir($configDPath)) {
@@ -529,7 +530,7 @@ class SshService
     public function importKeysFromFiles(): array
     {
         try {
-            $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+            $homePath = app(SshSettings::class)->getHomeDir();
             $sshPath = "{$homePath}/.ssh";
 
             if (! is_dir($sshPath)) {

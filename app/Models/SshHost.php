@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Settings\SshSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,7 +37,7 @@ class SshHost extends Model
 
     public function toSshConfigFormat(): string
     {
-        $homePath = app(\App\Settings\SshSettings::class)->getHomeDir();
+        $homePath = app(SshSettings::class)->getHomeDir();
 
         $config = "Host {$this->name}\n";
         $config .= "  Hostname {$this->hostname}\n";

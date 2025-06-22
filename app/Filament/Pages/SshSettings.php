@@ -3,21 +3,23 @@
 namespace App\Filament\Pages;
 
 use App\Settings\SshSettings as SshSettingsModel;
+use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Schema;
 
 class SshSettings extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-cog';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog';
 
     protected static ?string $navigationLabel = 'SSH Settings';
 
     protected static ?int $navigationSort = 5;
 
-    protected static string $view = 'filament.pages.ssh-settings';
+    protected string $view = 'filament.pages.ssh-settings';
 
     public ?array $data = [];
 
@@ -34,38 +36,42 @@ class SshSettings extends Page
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                TextInput::make('home_dir')
-                    ->label('SSH Home Directory')
-                    ->required()
-                    ->placeholder('/home/user')
-                    ->helperText('The home directory where the .ssh folder is located'),
+        return $schema
+            ->components([
+                Grid::make(2)
+                    ->schema([
+                        TextInput::make('home_dir')
+                            ->label('SSH Home Directory')
+                            ->required()
+                            ->placeholder('/home/user')
+                            ->helperText('The home directory where the .ssh folder is located'),
 
-                TextInput::make('default_user')
-                    ->label('Default SSH User')
-                    ->required()
-                    ->placeholder('root')
-                    ->helperText('The default user for SSH connections'),
+                        TextInput::make('default_user')
+                            ->label('Default SSH User')
+                            ->required()
+                            ->placeholder('root')
+                            ->helperText('The default user for SSH connections'),
 
-                TextInput::make('default_port')
-                    ->label('Default SSH Port')
-                    ->required()
-                    ->numeric()
-                    ->placeholder('22')
-                    ->helperText('The default port for SSH connections'),
+                        TextInput::make('default_port')
+                            ->label('Default SSH Port')
+                            ->required()
+                            ->numeric()
+                            ->placeholder('22')
+                            ->helperText('The default port for SSH connections'),
 
-                TextInput::make('default_key_type')
-                    ->label('Default SSH Key Type')
-                    ->required()
-                    ->placeholder('ed25519')
-                    ->helperText('The default key type for new SSH keys'),
+                        TextInput::make('default_key_type')
+                            ->label('Default SSH Key Type')
+                            ->required()
+                            ->placeholder('ed25519')
+                            ->helperText('The default key type for new SSH keys'),
 
-                Toggle::make('strict_host_checking')
-                    ->label('Strict Host Key Checking')
-                    ->helperText('Enable strict host key checking for SSH connections'),
+                        Toggle::make('strict_host_checking')
+                            ->label('Strict Host Key Checking')
+                            ->helperText('Enable strict host key checking for SSH connections')
+                            ->columnSpan(2),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -92,7 +98,7 @@ class SshSettings extends Page
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('save')
+            Action::make('save')
                 ->label('Save Settings')
                 ->submit('save'),
         ];

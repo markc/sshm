@@ -5,8 +5,13 @@ namespace App\Filament\Resources\SshKeyResource\Pages;
 use App\Filament\Resources\SshKeyResource;
 use App\Models\SshKey;
 use App\Services\SshService;
+use Exception;
 use Filament\Actions;
-use Filament\Forms;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
@@ -14,20 +19,35 @@ class ListSshKeys extends ListRecords
 {
     protected static string $resource = SshKeyResource::class;
 
+    public function hasResourceBreadcrumbs(): bool
+    {
+        return false;
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return '';
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             // Dropdown menu for all actions except Create
-            Actions\ActionGroup::make([
-                Actions\Action::make('generateKey')
+            ActionGroup::make([
+                Action::make('generateKey')
                     ->label('Generate New Key')
                     ->icon('heroicon-o-key')
                     ->color('success')
                     ->modalHeading('Generate New SSH Key')
                     ->modalDescription('Generate a new SSH key pair with the following settings:')
                     ->modalSubmitActionLabel('Generate Key')
-                    ->form([
-                        Forms\Components\TextInput::make('name')
+                    ->schema([
+                        TextInput::make('name')
                             ->label('Key Name')
                             ->required()
                             ->unique('ssh_keys', 'name')
@@ -35,7 +55,7 @@ class ListSshKeys extends ListRecords
                             ->placeholder('id_ed25519')
                             ->helperText('The name of the key file (e.g., id_ed25519)'),
 
-                        Forms\Components\TextInput::make('comment')
+                        TextInput::make('comment')
                             ->label('Comment')
                             ->maxLength(255)
                             ->default(function () {
@@ -47,14 +67,14 @@ class ListSshKeys extends ListRecords
                             ->placeholder('user@hostname')
                             ->helperText('A comment to help identify this key'),
 
-                        Forms\Components\TextInput::make('password')
+                        TextInput::make('password')
                             ->label('Password (Optional)')
                             ->password()
                             ->maxLength(255)
                             ->placeholder('Leave empty for no password')
                             ->helperText('A password to protect the private key (optional)'),
 
-                        Forms\Components\Select::make('type')
+                        Select::make('type')
                             ->label('Key Type')
                             ->options([
                                 'ed25519' => 'ED25519 (Recommended)',
@@ -81,7 +101,7 @@ class ListSshKeys extends ListRecords
                                 ->send();
 
                             $this->resetTable();
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             Notification::make()
                                 ->danger()
                                 ->title('Key Generation Failed')
@@ -90,7 +110,7 @@ class ListSshKeys extends ListRecords
                         }
                     }),
 
-                Actions\Action::make('importFromFiles')
+                Action::make('importFromFiles')
                     ->label('Import from Files')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('gray')
@@ -115,7 +135,7 @@ class ListSshKeys extends ListRecords
                         }
                     }),
 
-                Actions\Action::make('syncAllToFiles')
+                Action::make('syncAllToFiles')
                     ->label('Sync All to Files')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
@@ -142,11 +162,11 @@ class ListSshKeys extends ListRecords
                 ->icon('heroicon-o-key'),
 
             // Create button positioned last (on the right)
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->label('New SSH Key')
                 ->modalHeading('Create SSH Key')
                 ->icon('heroicon-o-plus')
-                ->mutateFormDataUsing(function (array $data): array {
+                ->mutateDataUsing(function (array $data): array {
                     // Set defaults if needed
                     $data['active'] = $data['active'] ?? true;
 

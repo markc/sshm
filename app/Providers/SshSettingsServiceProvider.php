@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Settings\SshSettings;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -28,7 +29,7 @@ class SshSettingsServiceProvider extends ServiceProvider
                         foreach ($settings as $setting) {
                             try {
                                 $settingsData[$setting->name] = json_decode($setting->value, true);
-                            } catch (\Exception $e) {
+                            } catch (Exception $e) {
                                 $settingsData[$setting->name] = $setting->value;
                             }
                         }
@@ -43,7 +44,7 @@ class SshSettingsServiceProvider extends ServiceProvider
                         ]);
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Fallback to environment variables if database error
                 report($e);
             }
@@ -79,7 +80,7 @@ class SshSettingsServiceProvider extends ServiceProvider
                     });
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Silently fail during CI/testing when database isn't ready
             if (app()->environment('testing', 'github')) {
                 return;

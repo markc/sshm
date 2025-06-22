@@ -4,23 +4,31 @@ namespace App\Filament\Pages;
 
 use App\Models\SshHost;
 use App\Services\SshService;
+use Exception;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Schema;
+use Illuminate\Validation\ValidationException;
+use Spatie\Ssh\Ssh;
 use Symfony\Component\Process\Process;
 
 class SshCommandRunner extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-command-line';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-command-line';
 
     protected static ?string $navigationLabel = 'SSH Commands';
 
     protected static ?int $navigationSort = 1;
 
-    protected static string $view = 'filament.pages.ssh-command-runner';
+    protected string $view = 'filament.pages.ssh-command-runner';
 
     public ?array $commandOutput = null;
 
@@ -43,7 +51,7 @@ class SshCommandRunner extends Page
         $this->debugOutput = '';
     }
 
-    protected ?\Spatie\Ssh\Ssh $currentSshProcess = null;
+    protected ?Ssh $currentSshProcess = null;
 
     public ?string $selectedHost = null;
 
@@ -59,14 +67,14 @@ class SshCommandRunner extends Page
 
     public bool $useCustomConnection = false;
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                \Filament\Forms\Components\Grid::make(2)
+        return $schema
+            ->components([
+                Grid::make(2)
                     ->schema([
                         // Left side - 50% width for command textarea
-                        \Filament\Forms\Components\Group::make([
+                        Group::make([
                             Textarea::make('command')
                                 ->label('Enter SSH Command(s)')
                                 ->required()
@@ -77,9 +85,9 @@ class SshCommandRunner extends Page
                             ->columnSpan(1),
 
                         // Right side - 50% width for controls
-                        \Filament\Forms\Components\Group::make([
+                        Group::make([
                             // SSH Host selector and Run button on same line
-                            \Filament\Forms\Components\Grid::make(2)
+                            Grid::make(2)
                                 ->schema([
                                     Select::make('selectedHost')
                                         ->label('Select SSH Host')
@@ -96,9 +104,9 @@ class SshCommandRunner extends Page
                                         })
                                         ->columnSpan(1),
 
-                                    \Filament\Forms\Components\Group::make([
-                                        \Filament\Forms\Components\Actions::make([
-                                            \Filament\Forms\Components\Actions\Action::make('runCommand')
+                                    Group::make([
+                                        Actions::make([
+                                            Action::make('runCommand')
                                                 ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
                                                 ->disabled(fn () => $this->isCommandRunning)
                                                 ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
@@ -114,8 +122,8 @@ class SshCommandRunner extends Page
                                                 ->extraAttributes(['class' => 'w-full']),
                                         ])->extraAttributes(['class' => 'mt-6']),
 
-                                        \Filament\Forms\Components\Actions::make([
-                                            \Filament\Forms\Components\Actions\Action::make('cancelCommand')
+                                        Actions::make([
+                                            Action::make('cancelCommand')
                                                 ->label('Cancel Command')
                                                 ->visible(fn () => $this->isCommandRunning)
                                                 ->icon('heroicon-o-x-circle')
@@ -160,11 +168,11 @@ class SshCommandRunner extends Page
                                 ->hidden(fn () => ! $this->useCustomConnection)
                                 ->extraAttributes(['class' => 'mb-4']),
 
-                            \Filament\Forms\Components\Toggle::make('verboseDebug')
+                            Toggle::make('verboseDebug')
                                 ->label('Verbose Debug')
                                 ->inline(true),
 
-                            \Filament\Forms\Components\Toggle::make('useBash')
+                            Toggle::make('useBash')
                                 ->label('Use bash')
                                 ->inline(true),
                         ])
@@ -188,7 +196,7 @@ class SshCommandRunner extends Page
                 'port' => $this->useCustomConnection ? 'required|numeric' : 'nullable',
                 'username' => $this->useCustomConnection ? 'required|string' : 'nullable',
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             Notification::make()
                 ->title('Validation Error')
                 ->body($e->validator->errors()->first())
@@ -286,7 +294,7 @@ class SshCommandRunner extends Page
                     ->body($result['error'])
                     ->send();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->isCommandRunning = false;
             $this->commandOutput = [
                 'success' => false,
@@ -342,7 +350,7 @@ class SshCommandRunner extends Page
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('toggleConnection')
+            Action::make('toggleConnection')
                 ->label(fn () => $this->useCustomConnection ? 'Use Saved Host' : 'Use Custom Connection')
                 ->icon('heroicon-o-arrow-path')
                 ->action(fn () => $this->toggleConnectionMode()),
