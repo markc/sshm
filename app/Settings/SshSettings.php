@@ -18,6 +18,10 @@ class SshSettings
 
     public bool $strict_host_checking = false;
 
+    public ?string $default_ssh_host = null;
+
+    public ?string $default_ssh_key = null;
+
     public function __construct(array $attributes = [])
     {
         if (isset($attributes['home_dir'])) {
@@ -34,6 +38,12 @@ class SshSettings
         }
         if (isset($attributes['strict_host_checking'])) {
             $this->strict_host_checking = (bool) $attributes['strict_host_checking'];
+        }
+        if (isset($attributes['default_ssh_host'])) {
+            $this->default_ssh_host = $attributes['default_ssh_host'];
+        }
+        if (isset($attributes['default_ssh_key'])) {
+            $this->default_ssh_key = $attributes['default_ssh_key'];
         }
     }
 
@@ -62,6 +72,16 @@ class SshSettings
         return $this->strict_host_checking;
     }
 
+    public function getDefaultSshHost(): ?string
+    {
+        return $this->default_ssh_host;
+    }
+
+    public function getDefaultSshKey(): ?string
+    {
+        return $this->default_ssh_key;
+    }
+
     public function save(array $data = []): void
     {
         // Update properties if data is provided
@@ -80,6 +100,12 @@ class SshSettings
             }
             if (isset($data['strict_host_checking'])) {
                 $this->strict_host_checking = (bool) $data['strict_host_checking'];
+            }
+            if (isset($data['default_ssh_host'])) {
+                $this->default_ssh_host = $data['default_ssh_host'];
+            }
+            if (isset($data['default_ssh_key'])) {
+                $this->default_ssh_key = $data['default_ssh_key'];
             }
         }
 
@@ -104,6 +130,8 @@ class SshSettings
             ['group' => 'ssh', 'name' => 'default_port', 'value' => $this->default_port],
             ['group' => 'ssh', 'name' => 'default_key_type', 'value' => $this->default_key_type],
             ['group' => 'ssh', 'name' => 'strict_host_checking', 'value' => $this->strict_host_checking],
+            ['group' => 'ssh', 'name' => 'default_ssh_host', 'value' => $this->default_ssh_host],
+            ['group' => 'ssh', 'name' => 'default_ssh_key', 'value' => $this->default_ssh_key],
         ];
 
         foreach ($settings as $setting) {
@@ -126,6 +154,8 @@ class SshSettings
             'SSH_DEFAULT_PORT' => $this->default_port,
             'SSH_DEFAULT_KEY_TYPE' => $this->default_key_type,
             'SSH_STRICT_HOST_CHECKING' => $this->strict_host_checking ? 'true' : 'false',
+            'SSH_DEFAULT_HOST' => $this->default_ssh_host,
+            'SSH_DEFAULT_KEY' => $this->default_ssh_key,
         ];
 
         foreach ($values as $key => $value) {

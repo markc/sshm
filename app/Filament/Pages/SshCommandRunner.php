@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\SshHost;
 use App\Services\SshService;
+use App\Settings\SshSettings;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -47,6 +48,18 @@ class SshCommandRunner extends Page
         $this->streamingOutput = '';
         $this->isCommandRunning = false;
         $this->debugOutput = '';
+
+        // Set default SSH host from settings
+        $settings = app(SshSettings::class);
+        $defaultHost = $settings->getDefaultSshHost();
+
+        if ($defaultHost) {
+            // Find the host by name and set as selected
+            $host = SshHost::where('name', $defaultHost)->where('active', true)->first();
+            if ($host) {
+                $this->selectedHost = (string) $host->id;
+            }
+        }
     }
 
     protected ?Ssh $currentSshProcess = null;
@@ -80,6 +93,18 @@ class SshCommandRunner extends Page
                                     return SshHost::where('active', true)
                                         ->pluck('name', 'id')
                                         ->toArray();
+                                })
+                                ->default(function () {
+                                    $settings = app(SshSettings::class);
+                                    $defaultHost = $settings->getDefaultSshHost();
+
+                                    if ($defaultHost) {
+                                        $host = SshHost::where('name', $defaultHost)->where('active', true)->first();
+                                        if ($host) {
+                                            return (string) $host->id;
+                                        }
+                                    }
+
                                 })
                                 ->afterStateUpdated(function ($state) {
                                     if ($state) {
@@ -127,9 +152,9 @@ class SshCommandRunner extends Page
                                     ])
                                         ->columnSpan(1),
 
-                                    // Verbose Debug toggle
+                                    // Debug toggle
                                     Toggle::make('verboseDebug')
-                                        ->label('Verbose Debug')
+                                        ->label('Debug')
                                         ->inline(true)
                                         ->columnSpan(1),
 
@@ -209,12 +234,12 @@ class SshCommandRunner extends Page
             if ($result['success']) {
                 Notification::make()
                     ->success()
-                    ->title('Command executed successfully')
+                    ->title('Command Completed (Exit Code: ' . $result['exit_code'] . ')')
                     ->send();
             } else {
                 Notification::make()
                     ->danger()
-                    ->title('Command failed')
+                    ->title('Command Failed (Exit Code: ' . $result['exit_code'] . ')')
                     ->body($result['error'])
                     ->send();
             }

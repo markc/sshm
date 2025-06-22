@@ -41,6 +41,8 @@ class SshSettingsServiceProvider extends ServiceProvider
                             'default_port' => $settingsData['default_port'] ?? (int) env('SSH_DEFAULT_PORT', 22),
                             'default_key_type' => $settingsData['default_key_type'] ?? env('SSH_DEFAULT_KEY_TYPE', 'ed25519'),
                             'strict_host_checking' => $settingsData['strict_host_checking'] ?? (bool) env('SSH_STRICT_HOST_CHECKING', false),
+                            'default_ssh_host' => $settingsData['default_ssh_host'] ?? env('SSH_DEFAULT_HOST'),
+                            'default_ssh_key' => $settingsData['default_ssh_key'] ?? env('SSH_DEFAULT_KEY'),
                         ]);
                     }
                 }
@@ -56,6 +58,8 @@ class SshSettingsServiceProvider extends ServiceProvider
                 'default_port' => (int) env('SSH_DEFAULT_PORT', 22),
                 'default_key_type' => env('SSH_DEFAULT_KEY_TYPE', 'ed25519'),
                 'strict_host_checking' => (bool) env('SSH_STRICT_HOST_CHECKING', false),
+                'default_ssh_host' => env('SSH_DEFAULT_HOST'),
+                'default_ssh_key' => env('SSH_DEFAULT_KEY'),
             ]);
         });
     }

@@ -33,6 +33,8 @@ class SshSettings extends Page
             'default_port' => $settings->getDefaultPort(),
             'default_key_type' => $settings->getDefaultKeyType(),
             'strict_host_checking' => $settings->getStrictHostChecking(),
+            'default_ssh_host' => $settings->getDefaultSshHost(),
+            'default_ssh_key' => $settings->getDefaultSshKey(),
         ]);
     }
 
@@ -67,6 +69,16 @@ class SshSettings extends Page
                             ->placeholder('ed25519')
                             ->helperText('The default key type for new SSH keys'),
 
+                        TextInput::make('default_ssh_host')
+                            ->label('Default SSH Host')
+                            ->placeholder('server.example.com')
+                            ->helperText('Default SSH host to select in the SSH Commands page'),
+
+                        TextInput::make('default_ssh_key')
+                            ->label('Default SSH Key Path')
+                            ->placeholder('/path/to/key')
+                            ->helperText('Default SSH key path for connections'),
+
                         Toggle::make('strict_host_checking')
                             ->label('Strict Host Key Checking')
                             ->helperText('Enable strict host key checking for SSH connections')
@@ -78,21 +90,32 @@ class SshSettings extends Page
 
     public function save(): void
     {
-        $data = $this->form->getState();
+        try {
+            $data = $this->form->getState();
 
-        // Get settings instance
-        $settings = app(SshSettingsModel::class);
+            // Get settings instance
+            $settings = app(SshSettingsModel::class);
 
-        // Save data
-        $settings->save($data);
+            // Save data
+            $settings->save($data);
 
-        // Refresh the application singleton
-        app()->forgetInstance(SshSettingsModel::class);
+            // Refresh the application singleton
+            app()->forgetInstance(SshSettingsModel::class);
 
-        Notification::make()
-            ->success()
-            ->title('Settings saved successfully')
-            ->send();
+            Notification::make()
+                ->success()
+                ->title('Settings saved successfully')
+                ->body('All SSH settings have been updated and are now active.')
+                ->send();
+        } catch (\Exception $e) {
+            \Log::error('SSH Settings save error:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+
+            Notification::make()
+                ->danger()
+                ->title('Error saving settings')
+                ->body('There was an error saving the settings: ' . $e->getMessage())
+                ->send();
+        }
     }
 
     protected function getHeaderActions(): array
@@ -100,7 +123,8 @@ class SshSettings extends Page
         return [
             Action::make('save')
                 ->label('Save Settings')
-                ->submit('save'),
+                ->action('save')
+                ->color('primary'),
         ];
     }
 }
