@@ -32,7 +32,7 @@ describe('SshCommandRunner Feature Tests', function () {
 
     it('displays page title correctly', function () {
         Livewire::test(SshCommandRunner::class)
-            ->assertSee('Enter SSH Command(s)');
+            ->assertSee('Enter SSH command(s) to execute...');
     });
 
     it('shows active SSH hosts in dropdown', function () {
@@ -66,7 +66,7 @@ describe('SshCommandRunner Feature Tests', function () {
 
     it('has command textarea field', function () {
         Livewire::test(SshCommandRunner::class)
-            ->assertSee('Enter SSH Command(s)');
+            ->assertSee('Enter SSH command(s) to execute...');
     });
 
     it('requires SSH host selection', function () {
