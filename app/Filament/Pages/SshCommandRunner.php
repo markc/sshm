@@ -64,16 +64,17 @@ class SshCommandRunner extends Page
                     ->schema([
                         // Command textarea - left side
                         Textarea::make('command')
-                            ->label('Enter SSH Command(s)')
+                            ->hiddenLabel()
                             ->required()
-                            ->rows(5)
+                            ->rows(4)
                             ->placeholder('Enter SSH command(s) to execute...')
                             ->extraAttributes(['style' => 'resize: none;'])
                             ->columnSpan(1),
 
                         // SSH Host selector - right side
                         Select::make('selectedHost')
-                            ->label('Select SSH Host')
+                            ->hiddenLabel()
+                            ->placeholder('Select SSH Host')
                             ->options(function () {
                                 return SshHost::where('active', true)
                                     ->pluck('name', 'id')
