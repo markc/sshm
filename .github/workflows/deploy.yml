@@ -88,7 +88,7 @@ jobs:
   deploy:
     needs: test-before-deploy
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && vars.DEPLOY_URL != ''
     
     environment: 
       name: ${{ github.event.inputs.environment || 'production' }}
@@ -248,7 +248,7 @@ jobs:
   post-deploy-tests:
     needs: deploy
     runs-on: ubuntu-latest
-    if: success()
+    if: success() && vars.DEPLOY_URL != ''
     
     steps:
     - name: Wait for application warmup
