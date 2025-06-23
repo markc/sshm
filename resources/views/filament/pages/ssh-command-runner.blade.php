@@ -1,4 +1,41 @@
 <x-filament-panels::page>
+    <!-- CSS Styles for Terminal -->
+    <style>
+        /* Clean separation between sections - match internal padding */
+        .fi-section-container {
+            margin-bottom: 1.5rem !important;
+        }
+        
+        .terminal-output {
+            color: #ffffff;
+        }
+        
+        .terminal-err {
+            color: #ff6b6b;
+        }
+        
+        .terminal-status {
+            color: #74c0fc;
+        }
+        
+        #terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #terminal-output::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        
+        #terminal-output::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+        
+        #terminal-output::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+        }
+    </style>
+
     <div class="fi-main-container mx-auto max-w-7xl">
         <div class="space-y-6">
             <!-- Section 1: Command Input -->
@@ -46,48 +83,10 @@
                 <input type="hidden" id="host-select" value="{{ $selectedHost }}">
             @endif
         </div>
-    </div>
-
-    <!-- CSS Styles for Terminal -->
-    <style>
-        /* Clean separation between sections - match internal padding */
-        .fi-section-container {
-            margin-bottom: 1.5rem !important;
-        }
         
-        .terminal-output {
-            color: #ffffff;
-        }
-        
-        .terminal-err {
-            color: #ff6b6b;
-        }
-        
-        .terminal-status {
-            color: #74c0fc;
-        }
-        
-        #terminal-output::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        #terminal-output::-webkit-scrollbar-track {
-            background: #2d3748;
-        }
-        
-        #terminal-output::-webkit-scrollbar-thumb {
-            background: #4a5568;
-            border-radius: 4px;
-        }
-        
-        #terminal-output::-webkit-scrollbar-thumb:hover {
-            background: #718096;
-        }
-    </style>
-
-    <!-- Load Echo and Pusher from CDN for testing -->
-    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.0/dist/echo.iife.js"></script>
+        <!-- Load Echo and Pusher from CDN for testing -->
+        <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.0/dist/echo.iife.js"></script>
     
     <!-- Simple JavaScript Test -->
     <script>
@@ -302,4 +301,5 @@
             });
         });
     </script>
+    </div>
 </x-filament-panels::page>

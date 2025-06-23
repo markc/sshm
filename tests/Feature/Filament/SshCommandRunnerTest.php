@@ -3,6 +3,7 @@
 use App\Filament\Pages\SshCommandRunner;
 use App\Models\SshHost;
 use App\Models\User;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 describe('SshCommandRunner Feature Tests', function () {
@@ -74,7 +75,7 @@ describe('SshCommandRunner Feature Tests', function () {
             ->fillForm([
                 'command' => 'ls -la',
             ])
-            ->call('runCommand')
+            ->call('startTerminalCommand')
             ->assertHasErrors(['selectedHost']);
     });
 
@@ -83,137 +84,98 @@ describe('SshCommandRunner Feature Tests', function () {
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
             ])
-            ->call('runCommand')
+            ->call('startTerminalCommand')
             ->assertHasErrors(['command']);
     });
 
     it('can execute SSH command successfully', function () {
-        $this->mock(\App\Services\SshService::class, function ($mock) {
-            $mock->shouldReceive('executeCommandWithStreaming')
-                ->andReturn([
-                    'success' => true,
-                    'output' => 'Command output here',
-                    'error' => '',
-                    'exit_code' => 0,
-                ]);
-        });
+        Queue::fake();
 
-        Livewire::test(SshCommandRunner::class)
+        $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
                 'command' => 'ls -la',
             ])
-            ->call('runCommand')
+            ->call('startTerminalCommand')
             ->assertHasNoErrors();
+
+        expect($component->get('isCommandRunning'))->toBe(true);
+        expect($component->get('currentProcessId'))->not->toBeNull();
+        Queue::assertPushed(\App\Jobs\RunSshCommand::class);
     });
 
     it('handles SSH command errors gracefully', function () {
-        $this->mock(\App\Services\SshService::class, function ($mock) {
-            $mock->shouldReceive('executeCommandWithStreaming')
-                ->andReturn([
-                    'success' => false,
-                    'output' => '',
-                    'error' => 'Error occurred',
-                    'exit_code' => 1,
-                ]);
-        });
+        Queue::fake();
 
-        Livewire::test(SshCommandRunner::class)
+        $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
                 'command' => 'invalid-command',
             ])
-            ->call('runCommand')
+            ->call('startTerminalCommand')
             ->assertHasNoErrors();
+
+        expect($component->get('isCommandRunning'))->toBe(true);
+        Queue::assertPushed(\App\Jobs\RunSshCommand::class);
     });
 
     it('displays command execution state', function () {
-        $this->mock(\App\Services\SshService::class, function ($mock) {
-            $mock->shouldReceive('executeCommandWithStreaming')
-                ->andReturn([
-                    'success' => true,
-                    'output' => 'Hello World',
-                    'error' => '',
-                    'exit_code' => 0,
-                ]);
-        });
+        Queue::fake();
 
         $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
                 'command' => 'echo "Hello World"',
             ])
-            ->call('runCommand');
+            ->call('startTerminalCommand');
 
-        expect($component->get('commandOutput'))->not->toBeNull();
+        expect($component->get('isCommandRunning'))->toBe(true);
+        expect($component->get('hasTerminalOutput'))->toBe(true);
     });
 
     it('clears output when executing new command', function () {
-        $this->mock(\App\Services\SshService::class, function ($mock) {
-            $mock->shouldReceive('executeCommandWithStreaming')
-                ->andReturn([
-                    'success' => true,
-                    'output' => 'New output',
-                    'error' => '',
-                    'exit_code' => 0,
-                ]);
-        });
+        Queue::fake();
 
         $component = Livewire::test(SshCommandRunner::class)
-            ->set('commandOutput', [
-                'success' => true,
-                'output' => 'Previous output',
-                'error' => '',
-                'exit_code' => 0,
-            ])
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
                 'command' => 'echo "test"',
             ])
-            ->call('runCommand');
+            ->call('startTerminalCommand');
 
-        expect($component->get('commandOutput')['output'])->toBe('New output');
+        expect($component->get('isCommandRunning'))->toBe(true);
+        expect($component->get('hasTerminalOutput'))->toBe(true);
+        Queue::assertPushed(\App\Jobs\RunSshCommand::class);
     });
 
     it('handles connection timeout errors', function () {
-        $this->mock(\App\Services\SshService::class, function ($mock) {
-            $mock->shouldReceive('executeCommandWithStreaming')
-                ->andReturn([
-                    'success' => false,
-                    'output' => '',
-                    'error' => 'Connection timeout',
-                    'exit_code' => 124,
-                ]);
-        });
+        Queue::fake();
 
-        Livewire::test(SshCommandRunner::class)
+        $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
                 'command' => 'sleep 60',
             ])
-            ->call('runCommand')
+            ->call('startTerminalCommand')
             ->assertHasNoErrors();
+
+        expect($component->get('isCommandRunning'))->toBe(true);
+        Queue::assertPushed(\App\Jobs\RunSshCommand::class);
     });
 
     it('preserves form data after command execution', function () {
-        $this->mock(\App\Services\SshService::class, function ($mock) {
-            $mock->shouldReceive('executeCommandWithStreaming')
-                ->andReturn([
-                    'success' => true,
-                    'output' => 'Success',
-                    'error' => '',
-                    'exit_code' => 0,
-                ]);
-        });
+        Queue::fake();
 
-        Livewire::test(SshCommandRunner::class)
+        $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
                 'command' => 'pwd',
             ])
-            ->call('runCommand')
+            ->call('startTerminalCommand')
             ->assertSet('selectedHost', $this->activeHost->id)
             ->assertSet('command', 'pwd');
+
+        expect($component->get('isCommandRunning'))->toBe(true);
     });
 
     it('tracks command running state', function () {
