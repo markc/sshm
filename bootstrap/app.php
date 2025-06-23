@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\DevAutoLogin::class,
         ]);
+
+        // Configure authentication redirects for FrankenPHP
+        $middleware->redirectUsersTo('/admin');
+        $middleware->redirectGuestsTo('/admin/login');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

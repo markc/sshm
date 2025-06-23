@@ -22,15 +22,13 @@ class SshCommandRunner extends Page
 
     protected static ?int $navigationSort = 1;
 
-    protected string $view = 'filament.pages.ssh-command-runner';
+    protected string $view = 'filament.pages.ssh-command-runner-optimized';
 
     public ?string $currentProcessId = null;
 
     public bool $isCommandRunning = false;
 
     public bool $useBashMode = false;
-
-    public bool $fastMode = true;
 
     public bool $showDebug = false;
 
@@ -142,12 +140,6 @@ class SshCommandRunner extends Page
                                         ->inline(true)
                                         ->extraAttributes(['class' => 'mt-2']),
 
-                                    // Fast Mode Toggle
-                                    Toggle::make('fastMode')
-                                        ->label('Fast Mode (Speed > Streaming)')
-                                        ->inline(true)
-                                        ->default(true)
-                                        ->extraAttributes(['class' => 'mt-2']),
                                 ])->columnSpan(1),
                             ])
                             ->columnSpan(1),
@@ -178,20 +170,16 @@ class SshCommandRunner extends Page
         $this->isCommandRunning = true;
         $this->hasTerminalOutput = true;
 
-        // Generate process ID and start SSH command directly via Livewire
+        // Generate process ID for tracking
         $processId = (string) \Illuminate\Support\Str::uuid();
         $this->currentProcessId = $processId;
 
-        // Store authorization info for channel access
-        \Illuminate\Support\Facades\Cache::put("process:{$processId}:user", auth()->id(), now()->addHours(2));
-        \Illuminate\Support\Facades\Cache::put("process:{$processId}:host", $this->selectedHost, now()->addHours(2));
-
-        // Dispatch the job to the queue for execution with bash mode and fast mode flags
-        \App\Jobs\RunSshCommand::dispatch($this->command, $processId, auth()->id(), (int) $this->selectedHost, $this->useBashMode, $this->fastMode);
-
-        // Notify frontend to subscribe to WebSocket channel
-        $this->dispatch('subscribe-to-process', [
+        // Notify frontend to start streaming via Server-Sent Events (much faster than WebSockets)
+        $this->dispatch('start-ssh-stream', [
             'process_id' => $processId,
+            'command' => $this->command,
+            'host_id' => (int) $this->selectedHost,
+            'use_bash' => $this->useBashMode,
         ]);
     }
 

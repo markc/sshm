@@ -1,0 +1,39 @@
+{
+    # FrankenPHP configuration for SSHM (ultra-optimized, worker mode disabled due to service container issues)
+    frankenphp
+    
+    # Enable HTTP/2 and HTTP/3 for better performance
+    auto_https off
+}
+
+:8000 {
+    root * public
+    php_server
+    
+    # Handle Laravel routes
+    try_files {path} /index.php
+    
+    # Security headers
+    header {
+        X-Frame-Options DENY
+        X-Content-Type-Options nosniff
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+    
+    # Enable compression
+    encode gzip
+    
+    # Optimized for real-time streaming
+    header /api/ssh/stream/* {
+        Cache-Control "no-cache, no-store, must-revalidate"
+        Connection "keep-alive"
+        X-Accel-Buffering "no"
+    }
+    
+    # Static file optimization
+    @static file
+    handle @static {
+        header Cache-Control "public, max-age=31536000"
+    }
+}

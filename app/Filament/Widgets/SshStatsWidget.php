@@ -8,6 +8,8 @@ use Composer\InstalledVersions;
 use Exception;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 
 class SshStatsWidget extends BaseWidget
 {
@@ -15,27 +17,44 @@ class SshStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Get system versions
-        $laravelVersion = app()->version();
-        $filamentVersion = $this->getPackageVersion('filament/filament');
-        $spatieVersion = $this->getPackageVersion('spatie/ssh');
-        $systemDescription = "Laravel v{$laravelVersion}" . PHP_EOL . "Filament v{$filamentVersion}" . PHP_EOL . "Spatie SSH v{$spatieVersion}";
+        // Cache system versions (rarely change) for 1 hour
+        $systemVersions = Cache::remember('widget_system_versions', 3600, function () {
+            return [
+                'laravel' => app()->version(),
+                'filament' => $this->getPackageVersion('filament/filament'),
+                'spatie' => $this->getPackageVersion('spatie/ssh'),
+            ];
+        });
 
-        // Get SSH stats
-        $totalHosts = SshHost::count();
-        $activeHosts = SshHost::where('active', true)->count();
+        // Cache SSH stats for 30 seconds to reduce database load
+        $sshStats = Cache::remember('widget_ssh_stats', 30, function () {
+            return [
+                'total_hosts' => SshHost::count(),
+                'active_hosts' => SshHost::where('active', true)->count(),
+                'total_keys' => SshKey::count(),
+                'active_keys' => SshKey::where('active', true)->count(),
+            ];
+        });
+
+        // Extract cached values
+        $totalHosts = $sshStats['total_hosts'];
+        $activeHosts = $sshStats['active_hosts'];
         $inactiveHosts = $totalHosts - $activeHosts;
 
-        $totalKeys = SshKey::count();
-        $activeKeys = SshKey::where('active', true)->count();
+        $totalKeys = $sshStats['total_keys'];
+        $activeKeys = $sshStats['active_keys'];
         $inactiveKeys = $totalKeys - $activeKeys;
+
+        // Get performance metrics from Redis
+        $cacheHits = Redis::hget('sshm:cache_stats', 'cache_hits') ?? 0;
+        $connectionCount = Redis::hget('sshm:connection_stats', 'prewarm_success') ?? 0;
 
         return [
             Stat::make('System Versions', '')
                 ->description(view('filament.widgets.system-versions-description', [
-                    'laravel' => $laravelVersion,
-                    'filament' => $filamentVersion,
-                    'spatie' => $spatieVersion,
+                    'laravel' => $systemVersions['laravel'],
+                    'filament' => $systemVersions['filament'],
+                    'spatie' => $systemVersions['spatie'],
                 ]))
                 ->color('info'),
 
