@@ -1,47 +1,16 @@
-@php
-    $hasTerminalOutput = $this->hasTerminalOutput;
-    $showDebug = $this->showDebug;
-    $selectedHost = $this->selectedHost;
-@endphp
-
-<x-filament-panels::page>
+<div>
+    <style>
+        .fi-section-container { margin-bottom: 1.5rem !important; }
+        .terminal-output { color: #ffffff; }
+        .terminal-err { color: #ff6b6b; }
+        .terminal-status { color: #74c0fc; }
+        #terminal-output::-webkit-scrollbar { width: 8px; }
+        #terminal-output::-webkit-scrollbar-track { background: #2d3748; }
+        #terminal-output::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        #terminal-output::-webkit-scrollbar-thumb:hover { background: #718096; }
+    </style>
+    
     <div class="space-y-6">
-        <!-- CSS Styles for Terminal -->
-        <style>
-            /* Clean separation between sections - match internal padding */
-            .fi-section-container {
-                margin-bottom: 1.5rem !important;
-            }
-            
-            .terminal-output {
-                color: #ffffff;
-            }
-            
-            .terminal-err {
-                color: #ff6b6b;
-            }
-            
-            .terminal-status {
-                color: #74c0fc;
-            }
-            
-            #terminal-output::-webkit-scrollbar {
-                width: 8px;
-            }
-            
-            #terminal-output::-webkit-scrollbar-track {
-                background: #2d3748;
-            }
-            
-            #terminal-output::-webkit-scrollbar-thumb {
-                background: #4a5568;
-                border-radius: 4px;
-            }
-            
-            #terminal-output::-webkit-scrollbar-thumb:hover {
-                background: #718096;
-            }
-        </style>
             <!-- Section 1: Command Input -->
             <section class="fi-section-container">
                 <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
@@ -54,7 +23,7 @@
             </section>
 
             <!-- Section 2: Terminal Output (conditionally shown) -->
-            <section class="fi-section-container" id="terminal-section" style="display: {{ $hasTerminalOutput ? 'block' : 'none' }};">
+            <section class="fi-section-container" id="terminal-section" style="display: {{ $this->hasTerminalOutput ? 'block' : 'none' }};">
                 <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                     <div class="fi-section-content-ctn">
                         <div class="fi-section-content p-8">
@@ -65,7 +34,7 @@
             </section>
 
             <!-- Section 3: Debug Information (conditionally shown) -->
-            @if ($showDebug)
+            @if ($this->showDebug)
                 <section class="fi-section-container">
                     <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                         <div class="fi-section-content-ctn">
@@ -77,14 +46,14 @@
                                     <div id="command-status-debug" class="text-sm mt-6"></div>
                                 </div>
                                 <!-- Hidden host selector for JavaScript access -->
-                                <input type="hidden" id="host-select" value="{{ $selectedHost }}">
+                                <input type="hidden" id="host-select" value="{{ $this->selectedHost }}">
                             </div>
                         </div>
                     </div>
                 </section>
             @else
                 <!-- Hidden host selector for JavaScript access when debug is off -->
-                <input type="hidden" id="host-select" value="{{ $selectedHost }}">
+                <input type="hidden" id="host-select" value="{{ $this->selectedHost }}">
             @endif
             
             <!-- Load Echo and Pusher from CDN for testing -->
@@ -305,4 +274,4 @@
         });
         </script>
     </div>
-</x-filament-panels::page>
+</div>
