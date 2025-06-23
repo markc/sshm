@@ -81,14 +81,13 @@
                 <!-- Hidden host selector for JavaScript access when debug is off -->
                 <input type="hidden" id="host-select" value="{{ $selectedHost }}">
             @endif
-        </div>
+            
+            <!-- Load Echo and Pusher from CDN for testing -->
+            <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.0/dist/echo.iife.js"></script>
         
-        <!-- Load Echo and Pusher from CDN for testing -->
-        <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.0/dist/echo.iife.js"></script>
-    
-    <!-- Simple JavaScript Test -->
-    <script>
+            <!-- Simple JavaScript Test -->
+            <script>
         // Simple JavaScript test first
         console.log('=== SSH Terminal JavaScript Test ===');
         console.log('1. Basic JavaScript is working');
@@ -299,6 +298,7 @@
                 }
             });
         });
-    </script>
+            </script>
+        </div>
     </div>
 </x-filament-panels::page>
