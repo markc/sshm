@@ -22,6 +22,8 @@ class SshSettings
 
     public ?string $default_ssh_key = null;
 
+    public int $timeout = 300;
+
     public function __construct(array $attributes = [])
     {
         if (isset($attributes['home_dir'])) {
@@ -44,6 +46,9 @@ class SshSettings
         }
         if (isset($attributes['default_ssh_key'])) {
             $this->default_ssh_key = $attributes['default_ssh_key'];
+        }
+        if (isset($attributes['timeout'])) {
+            $this->timeout = (int) $attributes['timeout'];
         }
     }
 
@@ -82,6 +87,11 @@ class SshSettings
         return $this->default_ssh_key;
     }
 
+    public function getTimeout(): int
+    {
+        return $this->timeout;
+    }
+
     public function save(array $data = []): void
     {
         // Update properties if data is provided
@@ -106,6 +116,9 @@ class SshSettings
             }
             if (isset($data['default_ssh_key'])) {
                 $this->default_ssh_key = $data['default_ssh_key'];
+            }
+            if (isset($data['timeout'])) {
+                $this->timeout = (int) $data['timeout'];
             }
         }
 
@@ -132,6 +145,7 @@ class SshSettings
             ['group' => 'ssh', 'name' => 'strict_host_checking', 'value' => $this->strict_host_checking],
             ['group' => 'ssh', 'name' => 'default_ssh_host', 'value' => $this->default_ssh_host],
             ['group' => 'ssh', 'name' => 'default_ssh_key', 'value' => $this->default_ssh_key],
+            ['group' => 'ssh', 'name' => 'timeout', 'value' => $this->timeout],
         ];
 
         foreach ($settings as $setting) {

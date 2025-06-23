@@ -35,6 +35,7 @@ class SshSettings extends Page
             'strict_host_checking' => $settings->getStrictHostChecking(),
             'default_ssh_host' => $settings->getDefaultSshHost(),
             'default_ssh_key' => $settings->getDefaultSshKey(),
+            'timeout' => $settings->getTimeout(),
         ]);
     }
 
@@ -78,6 +79,14 @@ class SshSettings extends Page
                             ->label('Default SSH Key Path')
                             ->placeholder('/path/to/key')
                             ->helperText('Default SSH key path for connections'),
+
+                        TextInput::make('timeout')
+                            ->label('SSH Command Timeout (seconds)')
+                            ->required()
+                            ->numeric()
+                            ->placeholder('300')
+                            ->helperText('Maximum time in seconds to wait for SSH commands to complete')
+                            ->columnSpan(2),
 
                         Toggle::make('strict_host_checking')
                             ->label('Strict Host Key Checking')

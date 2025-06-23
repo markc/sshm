@@ -41,6 +41,7 @@ return [
         'default_port' => env('SSH_DEFAULT_PORT', 22),
         'default_key_type' => env('SSH_DEFAULT_KEY_TYPE', 'ed25519'),
         'strict_host_checking' => env('SSH_STRICT_HOST_CHECKING', false),
+        'timeout' => env('SSH_TIMEOUT', 300), // 5 minutes default timeout
     ],
 
 ];

@@ -3,21 +3,16 @@
 namespace App\Filament\Pages;
 
 use App\Models\SshHost;
-use App\Services\SshService;
 use App\Settings\SshSettings;
-use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Schema;
-use Spatie\Ssh\Ssh;
-use Symfony\Component\Process\Process;
 
 class SshCommandRunner extends Page
 {
@@ -29,25 +24,21 @@ class SshCommandRunner extends Page
 
     protected string $view = 'filament.pages.ssh-command-runner';
 
-    public ?array $commandOutput = null;
-
-    public string $streamingOutput = '';
+    public ?string $currentProcessId = null;
 
     public bool $isCommandRunning = false;
 
-    public bool $verboseDebug = false;
+    public bool $useBashMode = false;
 
-    public string $debugOutput = '';
+    public bool $showDebug = false;
 
-    public bool $useBash = false;
+    public bool $hasTerminalOutput = false;
 
     public function mount(): void
     {
-        // Initialize properties to ensure they're properly tracked by Livewire
-        $this->commandOutput = null;
-        $this->streamingOutput = '';
+        // Initialize properties
         $this->isCommandRunning = false;
-        $this->debugOutput = '';
+        $this->currentProcessId = null;
 
         // Set default SSH host from settings
         $settings = app(SshSettings::class);
@@ -62,8 +53,6 @@ class SshCommandRunner extends Page
         }
     }
 
-    protected ?Ssh $currentSshProcess = null;
-
     public ?string $selectedHost = null;
 
     public ?string $command = null;
@@ -74,98 +63,84 @@ class SshCommandRunner extends Page
             ->components([
                 Grid::make(2)
                     ->schema([
-                        // Left side - Command textarea (4 rows, no label)
+                        // Left side - Command textarea (3 rows, no label)
                         Textarea::make('command')
                             ->hiddenLabel()
                             ->required()
-                            ->rows(4)
+                            ->rows(3)
                             ->placeholder('Enter SSH command(s) to execute...')
-                            ->extraAttributes(['style' => 'resize: none;'])
+                            ->extraAttributes([
+                                'style' => 'resize: none;',
+                                'id' => 'command-input',
+                            ])
                             ->columnSpan(1),
 
-                        // Right side - SSH Host selector with controls directly below
-                        Group::make([
-                            // SSH Host selector (no label, custom placeholder)
-                            Select::make('selectedHost')
-                                ->hiddenLabel()
-                                ->placeholder('Select SSH Host')
-                                ->options(function () {
-                                    return SshHost::where('active', true)
-                                        ->pluck('name', 'id')
-                                        ->toArray();
-                                })
-                                ->default(function () {
-                                    $settings = app(SshSettings::class);
-                                    $defaultHost = $settings->getDefaultSshHost();
+                        // Right side - Two sub-columns for controls
+                        Grid::make(2)
+                            ->schema([
+                                // Left sub-column: Run button and Debug toggle
+                                Group::make([
+                                    // Single button with dual states: Run/Stop
+                                    Actions::make([
+                                        Action::make('commandButton')
+                                            ->label(fn () => $this->isCommandRunning ? 'Stop Command' : 'Run Command')
+                                            ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
+                                            ->iconPosition('before')
+                                            ->color(fn () => $this->isCommandRunning ? 'danger' : 'primary')
+                                            ->size('lg')
+                                            ->extraAttributes(fn () => [
+                                                'id' => 'command-btn',
+                                                'class' => $this->isCommandRunning ? 'w-full' : 'w-full',
+                                            ])
+                                            ->action(fn () => $this->isCommandRunning ? $this->stopTerminalCommand() : $this->startTerminalCommand())
+                                            ->requiresConfirmation(false)
+                                            ->button(),
+                                    ]),
 
-                                    if ($defaultHost) {
-                                        $host = SshHost::where('name', $defaultHost)->where('active', true)->first();
-                                        if ($host) {
-                                            return (string) $host->id;
-                                        }
-                                    }
-
-                                })
-                                ->afterStateUpdated(function ($state) {
-                                    if ($state) {
-                                        $this->selectedHost = $state;
-                                    }
-                                }),
-
-                            // Run Command button and toggles in single horizontal row directly under dropdown
-                            Grid::make(3)
-                                ->schema([
-                                    // Run Command button
-                                    Group::make([
-                                        Actions::make([
-                                            Action::make('runCommand')
-                                                ->label(fn () => $this->isCommandRunning ? 'Running...' : 'Run Command')
-                                                ->disabled(fn () => $this->isCommandRunning)
-                                                ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-arrow-path' : 'heroicon-o-play')
-                                                ->iconPosition('before')
-                                                ->color('primary')
-                                                ->size('lg')
-                                                ->extraAttributes(fn () => $this->isCommandRunning ? ['class' => 'animate-pulse'] : [])
-                                                ->action(function () {
-                                                    $this->runCommand();
-                                                })
-                                                ->requiresConfirmation(false)
-                                                ->button()
-                                                ->extraAttributes(['class' => 'w-full']),
-                                        ]),
-
-                                        Actions::make([
-                                            Action::make('cancelCommand')
-                                                ->label('Cancel Command')
-                                                ->visible(fn () => $this->isCommandRunning)
-                                                ->icon('heroicon-o-x-circle')
-                                                ->iconPosition('before')
-                                                ->color('danger')
-                                                ->size('lg')
-                                                ->action(function () {
-                                                    $this->cancelCommand();
-                                                })
-                                                ->requiresConfirmation(false)
-                                                ->button()
-                                                ->extraAttributes(['class' => 'w-full']),
-                                        ])->visible(fn () => $this->isCommandRunning),
-                                    ])
-                                        ->columnSpan(1),
-
-                                    // Debug toggle
-                                    Toggle::make('verboseDebug')
-                                        ->label('Debug')
+                                    // Debug Toggle
+                                    Toggle::make('showDebug')
+                                        ->label('Show Debug Information')
                                         ->inline(true)
-                                        ->columnSpan(1),
+                                        ->live()
+                                        ->extraAttributes(['class' => 'mt-4']),
+                                ])->columnSpan(1),
 
-                                    // Use bash toggle
-                                    Toggle::make('useBash')
-                                        ->label('Use bash')
+                                // Right sub-column: SSH Host selector and Bash Mode toggle
+                                Group::make([
+                                    // SSH Host selector (no label, custom placeholder)
+                                    Select::make('selectedHost')
+                                        ->hiddenLabel()
+                                        ->placeholder('Select SSH Host')
+                                        ->options(function () {
+                                            return SshHost::where('active', true)
+                                                ->pluck('name', 'id')
+                                                ->toArray();
+                                        })
+                                        ->default(function () {
+                                            $settings = app(SshSettings::class);
+                                            $defaultHost = $settings->getDefaultSshHost();
+
+                                            if ($defaultHost) {
+                                                $host = SshHost::where('name', $defaultHost)->where('active', true)->first();
+                                                if ($host) {
+                                                    return (string) $host->id;
+                                                }
+                                            }
+
+                                        })
+                                        ->afterStateUpdated(function ($state) {
+                                            if ($state) {
+                                                $this->selectedHost = $state;
+                                            }
+                                        }),
+
+                                    // Bash Mode Toggle
+                                    Toggle::make('useBashMode')
+                                        ->label('Use Bash Mode')
                                         ->inline(true)
-                                        ->columnSpan(1),
-                                ])
-                                ->extraAttributes(['class' => 'mt-4']),
-                        ])
+                                        ->extraAttributes(['class' => 'mt-4']),
+                                ])->columnSpan(1),
+                            ])
                             ->columnSpan(1),
                     ]),
             ]);
@@ -176,113 +151,85 @@ class SshCommandRunner extends Page
         return SshCommandRunner::class;
     }
 
-    public function runCommand(): void
+    protected function getViewData(): array
+    {
+        return [
+            'showDebug' => $this->showDebug,
+            'hasTerminalOutput' => $this->hasTerminalOutput,
+        ];
+    }
+
+    public function startTerminalCommand(): void
     {
         $this->validate([
             'command' => 'required|string',
             'selectedHost' => 'required',
         ]);
 
-        // Reset output and set running state
-        $this->streamingOutput = '';
-        $this->commandOutput = null;
-        $this->debugOutput = '';
         $this->isCommandRunning = true;
 
-        $sshService = app(SshService::class);
+        // Generate process ID and start SSH command directly via Livewire
+        $processId = (string) \Illuminate\Support\Str::uuid();
+        $this->currentProcessId = $processId;
 
-        try {
-            $host = SshHost::findOrFail($this->selectedHost);
-            $result = $sshService->executeCommandWithStreaming(
-                $host,
-                $this->command,
-                function ($type, $line) {
-                    if ($type === Process::OUT || $type === 'out') {
-                        $this->streamingOutput .= $line;
-                        $this->dispatch('outputUpdated', [$this->streamingOutput]);
-                    }
-                },
-                $this->verboseDebug,
-                function ($debugLine) {
-                    $this->debugOutput .= $debugLine . "\n";
-                    $this->dispatch('debugUpdated', [$this->debugOutput]);
-                },
-                $this->useBash
-            );
+        // Store authorization info for channel access
+        \Illuminate\Support\Facades\Cache::put("process:{$processId}:user", auth()->id(), now()->addHours(2));
+        \Illuminate\Support\Facades\Cache::put("process:{$processId}:host", $this->selectedHost, now()->addHours(2));
+
+        // Dispatch the job to the queue for execution with bash mode flag
+        \App\Jobs\RunSshCommand::dispatch($this->command, $processId, auth()->id(), (int) $this->selectedHost, $this->useBashMode);
+
+        // Notify frontend to subscribe to WebSocket channel
+        $this->dispatch('subscribe-to-process', [
+            'process_id' => $processId,
+        ]);
+    }
+
+    public function stopTerminalCommand(): void
+    {
+        if ($this->currentProcessId) {
+            // Get PID and kill the process
+            $pid = \Illuminate\Support\Facades\Cache::get("process:{$this->currentProcessId}:pid");
+
+            if ($pid) {
+                try {
+                    \Illuminate\Support\Facades\Process::run("kill {$pid}");
+                    \App\Events\SshOutputReceived::dispatch($this->currentProcessId, 'status', 'Process terminated by user.');
+
+                    // Clean up cache keys
+                    \Illuminate\Support\Facades\Cache::forget("process:{$this->currentProcessId}:user");
+                    \Illuminate\Support\Facades\Cache::forget("process:{$this->currentProcessId}:host");
+                    \Illuminate\Support\Facades\Cache::forget("process:{$this->currentProcessId}:pid");
+
+                } catch (\Exception $e) {
+                    \App\Events\SshOutputReceived::dispatch($this->currentProcessId, 'err', 'Failed to terminate process: ' . $e->getMessage());
+                }
+            }
 
             $this->isCommandRunning = false;
-            $this->commandOutput = $result;
-
-            // Always update streaming output with final result to ensure UI displays something
-            if (! empty($result['output'])) {
-                $this->streamingOutput = $result['output'];
-                $this->dispatch('outputUpdated', [$this->streamingOutput]);
-            }
-
-            // Debug: Log what we're getting
-            if ($this->verboseDebug && ! empty($this->debugOutput)) {
-                $this->debugOutput .= "\n=== Final State ===\n";
-                $this->debugOutput .= 'Streaming Output Length: ' . strlen($this->streamingOutput) . "\n";
-                $this->debugOutput .= 'Result Output Length: ' . strlen($result['output']) . "\n";
-                $this->debugOutput .= 'Command Output Set: ' . ($this->commandOutput ? 'Yes' : 'No') . "\n";
-                $this->dispatch('debugUpdated', [$this->debugOutput]);
-            }
-
-            // Force Livewire to refresh the UI
-            $this->dispatch('$refresh');
-
-            if ($result['success']) {
-                Notification::make()
-                    ->success()
-                    ->title('Command Completed (Exit Code: ' . $result['exit_code'] . ')')
-                    ->send();
-            } else {
-                Notification::make()
-                    ->danger()
-                    ->title('Command Failed (Exit Code: ' . $result['exit_code'] . ')')
-                    ->body($result['error'])
-                    ->send();
-            }
-        } catch (Exception $e) {
-            $this->isCommandRunning = false;
-            $this->commandOutput = [
-                'success' => false,
-                'output' => $this->streamingOutput,
-                'error' => $e->getMessage(),
-                'exit_code' => -1,
-            ];
-
-            // Force Livewire to refresh the UI
-            $this->dispatch('$refresh');
-
-            Notification::make()
-                ->danger()
-                ->title('Error')
-                ->body($e->getMessage())
-                ->send();
+            $this->currentProcessId = null;
         }
     }
 
-    public function cancelCommand(): void
+    public function setProcessId(string $processId): void
     {
-        $this->isCommandRunning = false;
-        $this->streamingOutput .= "\n\n--- Command cancelled by user ---\n";
-        $this->dispatch('outputUpdated', [$this->streamingOutput]);
+        $this->currentProcessId = $processId;
+    }
 
-        $this->commandOutput = [
-            'success' => false,
-            'output' => $this->streamingOutput,
-            'error' => 'Command cancelled by user',
-            'exit_code' => -1,
+    public function setRunningState(bool $isRunning): void
+    {
+        $this->isCommandRunning = $isRunning;
+
+        if (! $isRunning) {
+            $this->currentProcessId = null;
+        }
+    }
+
+    protected function getListeners(): array
+    {
+        return [
+            'setProcessId' => 'setProcessId',
+            'setRunningState' => 'setRunningState',
         ];
-
-        // Force Livewire to update the UI
-        $this->dispatch('$refresh');
-
-        Notification::make()
-            ->title('Command Cancelled')
-            ->body('The SSH command was cancelled')
-            ->warning()
-            ->send();
     }
 }

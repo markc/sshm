@@ -55,11 +55,14 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ]);
 
-        // Apply authentication based on desktop mode
+        // Apply authentication based on mode
         if (config('app.desktop_mode', false)) {
             $panel->authMiddleware([
                 DesktopAuthenticate::class,
             ]);
+        } elseif (config('app.dev_no_auth', false) && config('app.env') === 'local') {
+            // Skip authentication entirely in dev mode
+            $panel->authMiddleware([]);
         } else {
             $panel->authMiddleware([
                 Authenticate::class,

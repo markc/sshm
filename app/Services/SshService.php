@@ -27,7 +27,8 @@ class SshService
             }
 
             // Create the SSH connection
-            $ssh = Ssh::create($host->user, $host->hostname);
+            $ssh = Ssh::create($host->user, $host->hostname)
+                ->setTimeout(app(SshSettings::class)->getTimeout());
 
             // Configure port if not default
             if ($host->port && $host->port != 22) {
@@ -99,7 +100,8 @@ class SshService
             }
 
             // Create the SSH connection with streaming support
-            $ssh = Ssh::create($host->user, $host->hostname);
+            $ssh = Ssh::create($host->user, $host->hostname)
+                ->setTimeout(app(SshSettings::class)->getTimeout());
 
             if ($debugCallback && $verboseDebug) {
                 $debugCallback('SSH connection object created');

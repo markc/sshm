@@ -43,6 +43,7 @@ class SshSettingsServiceProvider extends ServiceProvider
                             'strict_host_checking' => $settingsData['strict_host_checking'] ?? (bool) env('SSH_STRICT_HOST_CHECKING', false),
                             'default_ssh_host' => $settingsData['default_ssh_host'] ?? env('SSH_DEFAULT_HOST'),
                             'default_ssh_key' => $settingsData['default_ssh_key'] ?? env('SSH_DEFAULT_KEY'),
+                            'timeout' => $settingsData['timeout'] ?? (int) env('SSH_TIMEOUT', 300),
                         ]);
                     }
                 }
@@ -60,6 +61,7 @@ class SshSettingsServiceProvider extends ServiceProvider
                 'strict_host_checking' => (bool) env('SSH_STRICT_HOST_CHECKING', false),
                 'default_ssh_host' => env('SSH_DEFAULT_HOST'),
                 'default_ssh_key' => env('SSH_DEFAULT_KEY'),
+                'timeout' => (int) env('SSH_TIMEOUT', 300),
             ]);
         });
     }

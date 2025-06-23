@@ -1,105 +1,263 @@
 <x-filament-panels::page>
-    <div class="grid gap-6 lg:gap-8">
-        <!-- Form section with Filament styling -->
-        <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-            <div class="fi-section-header flex flex-col gap-3 px-6 py-4">
-                <div class="flex items-center gap-3">
-                    <div class="grid flex-1 gap-1">
-                        <h3 class="fi-section-header-heading text-base font-semibold text-gray-950 dark:text-white">
-                            SSH Command Execution
-                        </h3>
-                        <p class="fi-section-header-description text-sm text-gray-500 dark:text-gray-400">
-                            Enter commands to execute on remote SSH hosts
-                        </p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="fi-section-content-ctn border-t border-gray-200 dark:border-white/10">
-                <div class="fi-section-content p-6">
-                    {{ $this->form }}
-                </div>
-            </div>
-        </div>
-
-        <!-- Command output section with Filament styling -->
-        @if ($isCommandRunning || $streamingOutput || $commandOutput)
-            <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-                <div class="fi-section-header flex flex-col gap-3 px-6 py-4">
-                    <div class="flex items-center gap-3">
-                        <div class="grid flex-1 gap-1">
-                            <h3 class="fi-section-header-heading text-base font-semibold text-gray-950 dark:text-white">
-                                @if ($isCommandRunning)
-                                    <span class="text-blue-600 dark:text-blue-400">
-                                        Command Running...
-                                        <svg class="inline ml-2 animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    </span>
-                                @else
-                                    Command Output
-                                @endif
-                            </h3>
-                            <p class="fi-section-header-description text-sm text-gray-500 dark:text-gray-400">
-                                Results from SSH command execution
-                            </p>
+    <div class="fi-main-container mx-auto max-w-7xl">
+        <div class="space-y-6">
+            <!-- Section 1: Command Input -->
+            <section class="fi-section-container">
+                <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+                    <div class="fi-section-content-ctn">
+                        <div class="fi-section-content p-8">
+                            {{ $this->form }}
                         </div>
                     </div>
                 </div>
-                
-                <div class="fi-section-content-ctn border-t border-gray-200 dark:border-white/10">
-                    <div class="fi-section-content p-6">
-                        @if ($streamingOutput || ($commandOutput && $commandOutput['output']))
-                            <pre id="streaming-output" class="block w-full p-4 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-64 overflow-y-auto">{{ $streamingOutput ?: ($commandOutput['output'] ?? '') }}</pre>
-                        @endif
+            </section>
 
-                        @if ($commandOutput)
-                            <div class="mt-4">
-                                <div class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset {{ $commandOutput['success'] ? 'bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-400/10 dark:text-green-400 dark:ring-green-400/30' : 'bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-400/10 dark:text-red-400 dark:ring-red-400/30' }}">
-                                    {{ $commandOutput['success'] ? 'Command Completed (Exit Code: ' . $commandOutput['exit_code'] . ')' : 'Command Failed (Exit Code: ' . $commandOutput['exit_code'] . ')' }}
-                                </div>
-                            </div>
-                        @endif
-                        
-                        @if ($commandOutput && $commandOutput['error'])
-                            <div class="mt-4">
-                                <div class="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Error:</div>
-                                <pre class="block w-full p-4 border border-red-300 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/20 text-sm font-mono overflow-x-auto whitespace-pre-wrap">{{ $commandOutput['error'] }}</pre>
-                            </div>
-                        @endif
+            <!-- Section 2: Terminal Output (conditionally shown) -->
+            <section class="fi-section-container" id="terminal-section" style="display: none;">
+                <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+                    <div class="fi-section-content-ctn">
+                        <div class="fi-section-content p-8">
+                            <pre id="terminal-output" class="block w-full p-6 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-900 text-green-400 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-96 overflow-y-auto"></pre>
+                        </div>
                     </div>
                 </div>
-            </div>
-        @endif
+            </section>
 
-        <!-- Debug output at the bottom -->
-        @if ($verboseDebug && ($debugOutput || $isCommandRunning))
-            <div class="bg-gray-50 dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg p-4 border border-gray-300 dark:border-gray-600">
-                <h4 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">
-                    🐛 Verbose Debug Output
-                </h4>
-                <pre id="debug-output" class="block w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-800 dark:bg-black text-green-400 text-xs font-mono overflow-x-auto whitespace-pre-wrap h-40 overflow-y-auto">{{ $debugOutput }}</pre>
-            </div>
-        @endif
-
+            <!-- Section 3: Debug Information (conditionally shown) -->
+            @if ($showDebug)
+                <section class="fi-section-container">
+                    <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+                        <div class="fi-section-content-ctn">
+                            <div class="fi-section-content p-8">
+                                <div id="debug-info" class="text-xs text-gray-500 dark:text-gray-400 space-y-3">
+                                    <div>Status: <span id="connection-status">Checking JavaScript...</span></div>
+                                    <div>Process ID: <span id="process-id">None</span></div>
+                                    <div>Echo: <span id="echo-status">Unknown</span></div>
+                                    <div id="command-status-debug" class="text-sm mt-6"></div>
+                                </div>
+                                <!-- Hidden host selector for JavaScript access -->
+                                <input type="hidden" id="host-select" value="{{ $selectedHost }}">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            @else
+                <!-- Hidden host selector for JavaScript access when debug is off -->
+                <input type="hidden" id="host-select" value="{{ $selectedHost }}">
+            @endif
+        </div>
     </div>
 
-    <script>
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('outputUpdated', (output) => {
-                const outputElement = document.getElementById('streaming-output');
-                if (outputElement) {
-                    outputElement.textContent = output[0];
-                    outputElement.scrollTop = outputElement.scrollHeight;
-                }
-            });
+    <!-- CSS Styles for Terminal -->
+    <style>
+        /* Clean separation between sections - match internal padding */
+        .fi-section-container {
+            margin-bottom: 1.5rem !important;
+        }
+        
+        .terminal-output {
+            color: #ffffff;
+        }
+        
+        .terminal-err {
+            color: #ff6b6b;
+        }
+        
+        .terminal-status {
+            color: #74c0fc;
+        }
+        
+        #terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #terminal-output::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        
+        #terminal-output::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+        
+        #terminal-output::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+        }
+    </style>
 
-            Livewire.on('debugUpdated', (debugOutput) => {
-                const debugElement = document.getElementById('debug-output');
-                if (debugElement) {
-                    debugElement.textContent = debugOutput[0];
-                    debugElement.scrollTop = debugElement.scrollHeight;
+    <!-- Load Echo and Pusher from CDN for testing -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.0/dist/echo.iife.js"></script>
+    
+    <!-- Simple JavaScript Test -->
+    <script>
+        // Simple JavaScript test first
+        console.log('=== SSH Terminal JavaScript Test ===');
+        console.log('1. Basic JavaScript is working');
+        
+        // Initialize Echo manually
+        console.log('2. Initializing Echo from CDN...');
+        try {
+            window.Echo = new Echo({
+                broadcaster: 'reverb',
+                key: 'mzm0mamkrxpsxp8qssar',
+                wsHost: 'localhost',
+                wsPort: 8080,
+                wssPort: 8080,
+                forceTLS: false,
+                enabledTransports: ['ws', 'wss'],
+            });
+            console.log('3. Echo initialized from CDN successfully!');
+        } catch (error) {
+            console.error('3. Failed to initialize Echo from CDN:', error);
+        }
+        
+        // Test if elements exist
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('4. DOM loaded');
+            
+            const terminalOutput = document.getElementById('terminal-output');
+            const connectionStatus = document.getElementById('connection-status');
+            const echoStatus = document.getElementById('echo-status');
+            
+            if (terminalOutput) {
+                console.log('5. Terminal output element found');
+                connectionStatus.textContent = 'JavaScript Working';
+            } else {
+                console.error('5. ERROR: Terminal output element not found');
+                connectionStatus.textContent = 'ERROR: Elements missing';
+            }
+            
+            // Check if Echo is available
+            if (typeof window.Echo !== 'undefined' && window.Echo) {
+                console.log('6. Laravel Echo is available!');
+                echoStatus.textContent = 'Available';
+                echoStatus.style.color = 'green';
+            } else {
+                console.log('6. Laravel Echo is NOT available');
+                echoStatus.textContent = 'Missing';
+                echoStatus.style.color = 'red';
+                
+                // Check what's actually available
+                console.log('Available global objects:');
+                console.log('- window.axios:', typeof window.axios);
+                console.log('- window.Pusher:', typeof window.Pusher);
+                console.log('- window.Echo:', typeof window.Echo);
+                console.log('- window.Livewire:', typeof window.Livewire);
+            }
+        });
+        
+        // Global helper function to add terminal output (define early)
+        window.addTerminalOutput = function(type, content) {
+            console.log(`Adding terminal output: ${type} - ${content}`);
+            const terminalOutput = document.getElementById('terminal-output');
+            const terminalSection = document.getElementById('terminal-section');
+            
+            if (!terminalOutput) {
+                console.error('Terminal output element not found!');
+                return;
+            }
+
+            // Add only actual command output to terminal (completely clean)
+            if (type === 'out' || type === 'err') {
+                // Show terminal section when we have actual output
+                if (terminalSection) {
+                    terminalSection.style.display = 'block';
+                }
+                
+                if (type === 'out') {
+                    terminalOutput.textContent += content + '\n';
+                } else if (type === 'err') {
+                    terminalOutput.innerHTML += `<span class="terminal-err">${content}</span>\n`;
+                }
+            }
+            
+            // Move all status messages to debug section only
+            if (type === 'status') {
+                const debugStatus = document.getElementById('command-status-debug');
+                if (debugStatus) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    debugStatus.innerHTML += `<div class="text-blue-400">[${timestamp}] ${content}</div>`;
+                }
+                
+                // Update connection status for completed commands
+                if (content.includes('Command completed') || content.includes('Command failed')) {
+                    const connectionStatus = document.getElementById('connection-status');
+                    if (connectionStatus) {
+                        connectionStatus.textContent = 'Ready';
+                    }
+                }
+            }
+            
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        };
+
+
+        // Listen for Livewire events to subscribe to WebSocket process
+        document.addEventListener('livewire:init', () => {
+            console.log('7. Livewire initialized');
+            
+            Livewire.on('subscribe-to-process', (data) => {
+                console.log('8. Subscribe to process event received:', data);
+                const processId = data[0].process_id;
+                
+                // Update debug info
+                const processIdElement = document.getElementById('process-id');
+                const connectionStatusElement = document.getElementById('connection-status');
+                
+                if (processIdElement) processIdElement.textContent = processId;
+                if (connectionStatusElement) connectionStatusElement.textContent = 'Connecting...';
+                
+                const terminalOutput = document.getElementById('terminal-output');
+                const terminalSection = document.getElementById('terminal-section');
+                
+                if (terminalOutput) {
+                    // Clear terminal for new command
+                    terminalOutput.textContent = '';
+                    
+                    // Hide terminal section until we have output
+                    if (terminalSection) {
+                        terminalSection.style.display = 'none';
+                    }
+                    
+                    // Clear debug status for new command
+                    const debugStatus = document.getElementById('command-status-debug');
+                    if (debugStatus) {
+                        debugStatus.innerHTML = '';
+                    }
+                    
+                    // Subscribe to WebSocket channel if Echo is available
+                    if (window.Echo) {
+                        try {
+                            console.log('9. Subscribing to channel: ssh-process.' + processId);
+                            
+                            // Disconnect any existing channel
+                            if (window.currentSSHChannel) {
+                                window.Echo.leave(window.currentSSHChannel.name);
+                            }
+                            
+                            // Subscribe to private channel  
+                            window.currentSSHChannel = window.Echo.private(`ssh-process.${processId}`)
+                                .listen('SshOutputReceived', (event) => {
+                                    console.log('10. SSH output received:', event);
+                                    // Call the global addTerminalOutput function
+                                    window.addTerminalOutput(event.type, event.line);
+                                })
+                                .error((error) => {
+                                    console.error('WebSocket channel error:', error);
+                                    window.addTerminalOutput('error', `WebSocket error: ${error.message || 'Connection failed'}`);
+                                });
+                                
+                            if (connectionStatusElement) connectionStatusElement.textContent = 'Connected';
+                            
+                        } catch (error) {
+                            console.error('9. Failed to subscribe to channel:', error);
+                            if (connectionStatusElement) connectionStatusElement.textContent = 'Connection Failed';
+                        }
+                    } else {
+                        console.error('9. Echo not available for WebSocket subscription');
+                        if (connectionStatusElement) connectionStatusElement.textContent = 'Echo Missing';
+                    }
                 }
             });
         });
