@@ -7,6 +7,8 @@
 
 **THIS APPLICATION SHOULD ONLY BE USED ON LOCALHOST (127.0.0.1) AND NEVER ON A PUBLIC OR EXPOSED IP ADDRESS. IT ALLOWS ARBITRARY COMMAND EXECUTION ON REMOTE SERVERS THROUGH A WEB INTERFACE.**
 
+*This project was entirely "vibe" coded with the help of Claude Code - collaborative development at its finest! 🤖*
+
 A modern web-based SSH management application built with Laravel 12 and Filament 4.0. Execute remote commands, manage SSH hosts and keys, all through an intuitive web interface.
 
 ## Features
