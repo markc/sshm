@@ -54,21 +54,21 @@ class RunSshCommand implements ShouldQueue
             if ($this->fastMode) {
                 // Fast mode: Execute command and send all output at once
                 $result = Process::run($sshCommand);
-                
+
                 // Send all output at once for maximum speed
                 if ($result->output()) {
                     $lines = explode("\n", trim($result->output()));
                     foreach ($lines as $line) {
-                        if (!empty(trim($line))) {
+                        if (! empty(trim($line))) {
                             SshOutputReceived::dispatch($this->processId, 'out', $line);
                         }
                     }
                 }
-                
+
                 if ($result->errorOutput()) {
                     $lines = explode("\n", trim($result->errorOutput()));
                     foreach ($lines as $line) {
-                        if (!empty(trim($line))) {
+                        if (! empty(trim($line))) {
                             SshOutputReceived::dispatch($this->processId, 'err', $line);
                         }
                     }
@@ -94,8 +94,8 @@ class RunSshCommand implements ShouldQueue
 
                     // Flush buffers if enough time has passed or buffer is large
                     $timeSinceFlush = $currentTime - $lastFlushTime;
-                    $shouldFlush = $timeSinceFlush >= $flushInterval || 
-                                  strlen($outputBuffer) > 512 || 
+                    $shouldFlush = $timeSinceFlush >= $flushInterval ||
+                                  strlen($outputBuffer) > 512 ||
                                   strlen($errorBuffer) > 512;
 
                     if ($shouldFlush) {
@@ -216,11 +216,11 @@ class RunSshCommand implements ShouldQueue
     private function flushBuffers(string &$outputBuffer, string &$errorBuffer): void
     {
         // Process standard output buffer
-        if (!empty($outputBuffer)) {
+        if (! empty($outputBuffer)) {
             // Send as complete lines for better terminal display
             $lines = explode("\n", trim($outputBuffer));
             foreach ($lines as $line) {
-                if (!empty(trim($line))) {
+                if (! empty(trim($line))) {
                     SshOutputReceived::dispatch($this->processId, 'out', $line);
                 }
             }
@@ -228,10 +228,10 @@ class RunSshCommand implements ShouldQueue
         }
 
         // Process error output buffer
-        if (!empty($errorBuffer)) {
+        if (! empty($errorBuffer)) {
             $lines = explode("\n", trim($errorBuffer));
             foreach ($lines as $line) {
-                if (!empty(trim($line))) {
+                if (! empty(trim($line))) {
                     SshOutputReceived::dispatch($this->processId, 'err', $line);
                 }
             }
@@ -253,6 +253,7 @@ class RunSshCommand implements ShouldQueue
         } else {
             $minutes = floor($seconds / 60);
             $remainingSeconds = $seconds % 60;
+
             return sprintf('%dm %.3fs', $minutes, $remainingSeconds);
         }
     }
