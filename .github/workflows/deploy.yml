@@ -39,7 +39,7 @@ jobs:
           ${{ runner.os }}-php-8.4-
 
     - name: Install dependencies
-      run: composer install --optimize-autoloader --no-dev --no-interaction
+      run: composer install --optimize-autoloader --no-interaction
 
     - name: Copy environment file
       run: cp .env.example .env
