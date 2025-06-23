@@ -48,6 +48,9 @@ class RunSshCommand implements ShouldQueue
             $modeMessage = $this->useBashMode ? "Executing with bash -ci: {$this->command}" : "Executing: {$this->command}";
             SshOutputReceived::dispatch($this->processId, 'status', $modeMessage);
 
+            // Start execution timing
+            $startTime = microtime(true);
+
             if ($this->fastMode) {
                 // Fast mode: Execute command and send all output at once
                 $result = Process::run($sshCommand);
@@ -111,18 +114,23 @@ class RunSshCommand implements ShouldQueue
                 $this->flushBuffers($outputBuffer, $errorBuffer);
             }
 
-            // Broadcast completion status
+            // Calculate execution time
+            $endTime = microtime(true);
+            $executionTime = $endTime - $startTime;
+            $executionTimeFormatted = $this->formatExecutionTime($executionTime);
+
+            // Broadcast completion status with timing
             if ($result->successful()) {
                 SshOutputReceived::dispatch(
                     $this->processId,
                     'status',
-                    '✅ Command completed successfully (Exit Code: 0)'
+                    "✅ Command completed successfully (Exit Code: 0) - Execution time: {$executionTimeFormatted}"
                 );
             } else {
                 SshOutputReceived::dispatch(
                     $this->processId,
                     'status',
-                    "❌ Command failed (Exit Code: {$result->exitCode()})"
+                    "❌ Command failed (Exit Code: {$result->exitCode()}) - Execution time: {$executionTimeFormatted}"
                 );
 
                 // Also broadcast any error output
@@ -228,6 +236,24 @@ class RunSshCommand implements ShouldQueue
                 }
             }
             $errorBuffer = '';
+        }
+    }
+
+    /**
+     * Format execution time in a human-readable format
+     */
+    private function formatExecutionTime(float $seconds): string
+    {
+        if ($seconds < 0.001) {
+            return number_format($seconds * 1000000, 0) . 'μs';
+        } elseif ($seconds < 1) {
+            return number_format($seconds * 1000, 1) . 'ms';
+        } elseif ($seconds < 60) {
+            return number_format($seconds, 3) . 's';
+        } else {
+            $minutes = floor($seconds / 60);
+            $remainingSeconds = $seconds % 60;
+            return sprintf('%dm %.3fs', $minutes, $remainingSeconds);
         }
     }
 

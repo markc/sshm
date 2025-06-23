@@ -43,6 +43,7 @@
                                     <div>Status: <span id="connection-status">Checking JavaScript...</span></div>
                                     <div>Process ID: <span id="process-id">None</span></div>
                                     <div>Echo: <span id="echo-status">Unknown</span></div>
+                                    <div>Last Execution Time: <span id="execution-time" class="font-mono text-green-400">-</span></div>
                                     <div id="command-status-debug" class="text-sm mt-6"></div>
                                 </div>
                                 <!-- Hidden host selector for JavaScript access -->
@@ -162,11 +163,21 @@
                     debugStatus.innerHTML += `<div class="text-blue-400">[${timestamp}] ${content}</div>`;
                 }
                 
-                // Update connection status for completed commands
+                // Update connection status for completed commands and extract execution time
                 if (content.includes('Command completed') || content.includes('Command failed')) {
                     const connectionStatus = document.getElementById('connection-status');
                     if (connectionStatus) {
                         connectionStatus.textContent = 'Ready';
+                    }
+                    
+                    // Extract and display execution time
+                    const executionTimeMatch = content.match(/Execution time: ([^)]+)/);
+                    if (executionTimeMatch) {
+                        const executionTimeElement = document.getElementById('execution-time');
+                        if (executionTimeElement) {
+                            executionTimeElement.textContent = executionTimeMatch[1];
+                            executionTimeElement.style.color = '#10b981'; // green-500
+                        }
                     }
                     
                     // Update button state directly without Livewire to prevent re-render
