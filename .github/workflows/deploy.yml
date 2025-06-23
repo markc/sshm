@@ -1,0 +1,288 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+jobs:
+  test-before-deploy:
+    runs-on: ubuntu-latest
+    name: Pre-deployment Tests
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.4
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+        coverage: none
+
+    - name: Cache Composer packages
+      uses: actions/cache@v4
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-8.4-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-8.4-
+
+    - name: Install dependencies
+      run: composer install --optimize-autoloader --no-dev --no-interaction
+
+    - name: Copy environment file
+      run: cp .env.example .env
+
+    - name: Generate application key
+      run: php artisan key:generate
+
+    - name: Create SQLite database
+      run: touch database/database.sqlite
+
+    - name: Run database migrations
+      run: php artisan migrate --force
+
+    - name: Clear all caches for clean test environment
+      run: |
+        php artisan view:clear
+        php artisan config:clear
+        php artisan cache:clear
+        php artisan optimize:clear
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install NPM dependencies
+      run: npm ci
+
+    - name: Compile assets
+      run: npm run build
+
+    - name: Run Laravel Pint
+      run: ./vendor/bin/pint --test
+
+    - name: Run Pest Tests
+      run: php artisan test --parallel
+
+    - name: Optimize for production testing
+      run: |
+        php artisan filament:optimize
+        php artisan config:cache
+        php artisan route:cache
+        php artisan view:cache
+
+  deploy:
+    needs: test-before-deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ vars.DEPLOY_URL }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2  # Need previous commit for rollback capability
+
+    - name: Setup SSH Key
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+    - name: Add server to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Create deployment script
+      run: |
+        cat > deploy.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "🚀 Starting SSH Manager deployment..."
+        
+        # Navigate to application directory
+        cd ${{ secrets.DEPLOY_PATH }}
+        
+        # Maintenance mode
+        php artisan down --retry=60 --secret="${{ secrets.DEPLOY_SECRET }}" || true
+        
+        # Pull latest code
+        git fetch origin
+        git reset --hard origin/main
+        
+        # Install PHP dependencies
+        composer install --optimize-autoloader --no-dev --no-interaction
+        
+        # Clear all caches
+        php artisan view:clear
+        php artisan config:clear
+        php artisan cache:clear
+        php artisan optimize:clear
+        
+        # Run database migrations
+        php artisan migrate --force
+        
+        # Install and build frontend assets
+        npm ci --production
+        npm run build
+        
+        # Filament optimizations
+        php artisan filament:optimize
+        php artisan icons:cache
+        
+        # Laravel optimizations
+        php artisan config:cache
+        php artisan route:cache
+        php artisan view:cache
+        
+        # Set proper permissions
+        chmod -R 755 storage bootstrap/cache
+        chown -R www-data:www-data storage bootstrap/cache
+        
+        # Exit maintenance mode
+        php artisan up
+        
+        echo "✅ Deployment completed successfully!"
+        EOF
+        
+        chmod +x deploy.sh
+
+    - name: Deploy to server
+      run: |
+        scp deploy.sh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ${{ secrets.DEPLOY_PATH }} && ./deploy.sh"
+
+    - name: Health check
+      run: |
+        sleep 30
+        echo "🔍 Performing health check..."
+        
+        # Check if application is responding
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ vars.DEPLOY_URL }}/health || echo "000")
+        
+        if [ "$HTTP_STATUS" -eq 200 ]; then
+          echo "✅ Health check passed - Application is responding"
+        else
+          echo "❌ Health check failed - HTTP Status: $HTTP_STATUS"
+          exit 1
+        fi
+
+    - name: Create rollback script
+      if: failure()
+      run: |
+        cat > rollback.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "🔄 Starting rollback procedure..."
+        
+        cd ${{ secrets.DEPLOY_PATH }}
+        
+        # Maintenance mode
+        php artisan down --retry=60 --secret="${{ secrets.DEPLOY_SECRET }}" || true
+        
+        # Get previous commit
+        PREVIOUS_COMMIT=$(git rev-parse HEAD~1)
+        echo "Rolling back to commit: $PREVIOUS_COMMIT"
+        
+        # Rollback code
+        git reset --hard $PREVIOUS_COMMIT
+        
+        # Reinstall dependencies for previous version
+        composer install --optimize-autoloader --no-dev --no-interaction
+        
+        # Clear and rebuild caches
+        php artisan optimize:clear
+        php artisan filament:optimize
+        php artisan config:cache
+        php artisan route:cache
+        php artisan view:cache
+        
+        # Exit maintenance mode
+        php artisan up
+        
+        echo "✅ Rollback completed to commit: $PREVIOUS_COMMIT"
+        EOF
+        
+        chmod +x rollback.sh
+
+    - name: Execute rollback on failure
+      if: failure()
+      run: |
+        echo "❌ Deployment failed, executing rollback..."
+        scp rollback.sh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ${{ secrets.DEPLOY_PATH }} && ./rollback.sh"
+
+    - name: Cleanup deployment files
+      if: always()
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ${{ secrets.DEPLOY_PATH }} && rm -f deploy.sh rollback.sh"
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "🎉 Deployment completed successfully!"
+          echo "🌐 Application URL: ${{ vars.DEPLOY_URL }}"
+        else
+          echo "💥 Deployment failed and rollback was executed"
+        fi
+
+  post-deploy-tests:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: success()
+    
+    steps:
+    - name: Wait for application warmup
+      run: sleep 60
+
+    - name: Comprehensive health check
+      run: |
+        echo "🔍 Running comprehensive health checks..."
+        
+        # Check main application
+        curl -f ${{ vars.DEPLOY_URL }} || exit 1
+        echo "✅ Main application is accessible"
+        
+        # Check admin panel
+        curl -f ${{ vars.DEPLOY_URL }}/admin || exit 1
+        echo "✅ Admin panel is accessible"
+        
+        # Check health endpoint
+        curl -f ${{ vars.DEPLOY_URL }}/health || exit 1
+        echo "✅ Health endpoint is responding"
+        
+        echo "🎉 All health checks passed!"
+
+    - name: Performance check
+      run: |
+        echo "⚡ Running performance checks..."
+        
+        # Check response time
+        RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ vars.DEPLOY_URL }})
+        echo "Response time: ${RESPONSE_TIME}s"
+        
+        # Alert if response time is too slow (>2 seconds)
+        if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
+          echo "⚠️ Warning: Response time is slower than expected"
+        else
+          echo "✅ Response time is acceptable"
+        fi

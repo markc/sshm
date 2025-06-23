@@ -55,6 +55,13 @@ jobs:
     - name: Run database migrations
       run: php artisan migrate --force
 
+    - name: Clear Laravel and Filament caches
+      run: |
+        php artisan view:clear
+        php artisan config:clear
+        php artisan cache:clear
+        php artisan optimize:clear
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
