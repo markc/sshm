@@ -27,7 +27,7 @@
                 <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                     <div class="fi-section-content-ctn">
                         <div class="fi-section-content p-8">
-                            <pre id="terminal-output" class="block w-full p-6 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-900 text-green-400 text-sm font-mono overflow-x-auto whitespace-pre-wrap h-96 overflow-y-auto"></pre>
+                            <pre id="terminal-output" class="block w-full p-6 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-900 text-green-400 text-sm font-mono overflow-x-auto whitespace-pre h-96 overflow-y-auto"></pre>
                         </div>
                     </div>
                 </div>
@@ -44,6 +44,7 @@
                                     <div>Process ID: <span id="process-id">None</span></div>
                                     <div>Echo: <span id="echo-status">Unknown</span></div>
                                     <div>Last Execution Time: <span id="execution-time" class="font-mono text-green-400">-</span></div>
+                                    <div>User Experience Time: <span id="ux-time" class="font-mono text-blue-400">-</span></div>
                                     <div id="command-status-debug" class="text-sm mt-6"></div>
                                 </div>
                                 <!-- Hidden host selector for JavaScript access -->
@@ -92,48 +93,73 @@
             const connectionStatus = document.getElementById('connection-status');
             const echoStatus = document.getElementById('echo-status');
             
+            console.log('Debug elements found:', {
+                terminalOutput: !!terminalOutput,
+                connectionStatus: !!connectionStatus,
+                echoStatus: !!echoStatus,
+                processId: !!document.getElementById('process-id'),
+                executionTime: !!document.getElementById('execution-time'),
+                uxTime: !!document.getElementById('ux-time')
+            });
+            
             if (terminalOutput) {
                 console.log('5. Terminal output element found');
-                if (connectionStatus) {
-                    connectionStatus.textContent = 'JavaScript Working';
-                }
             } else {
                 console.error('5. ERROR: Terminal output element not found');
-                if (connectionStatus) {
-                    connectionStatus.textContent = 'ERROR: Elements missing';
-                }
             }
             
-            // Check if Echo is available
+            // Initialize debug values immediately if elements exist
+            window.updateDebugElement('connection-status', 'Ready');
+            
+            // Check if Echo is available and update stored value
             if (typeof window.Echo !== 'undefined' && window.Echo) {
                 console.log('6. Laravel Echo is available!');
-                if (echoStatus) {
-                    echoStatus.textContent = 'Available';
-                    echoStatus.style.color = 'green';
-                }
+                window.debugValues.echoStatus = 'Available';
+                window.updateDebugElement('echo-status', 'Available', '#10b981');
             } else {
                 console.log('6. Laravel Echo is NOT available');
-                if (echoStatus) {
-                    echoStatus.textContent = 'Missing';
-                    echoStatus.style.color = 'red';
-                }
-                
-                // Check what's actually available
-                console.log('Available global objects:');
-                console.log('- window.axios:', typeof window.axios);
-                console.log('- window.Pusher:', typeof window.Pusher);
-                console.log('- window.Echo:', typeof window.Echo);
-                console.log('- window.Livewire:', typeof window.Livewire);
+                window.debugValues.echoStatus = 'Missing';
+                window.updateDebugElement('echo-status', 'Missing', '#ef4444');
             }
+            
+            // Also try to restore any existing debug values if debug panel is visible
+            setTimeout(window.restoreAllDebugValues, 50);
+            
+            // Check what's actually available
+            console.log('Available global objects:');
+            console.log('- window.axios:', typeof window.axios);
+            console.log('- window.Pusher:', typeof window.Pusher);
+            console.log('- window.Echo:', typeof window.Echo);
+            console.log('- window.Livewire:', typeof window.Livewire);
         });
         
         // Store terminal content globally to persist across Livewire re-renders
         window.terminalContent = window.terminalContent || '';
         window.debugContent = window.debugContent || '';
         
+        // Store timing information for user experience measurement
+        window.commandStartTime = null;
+        window.firstOutputTime = null;
+        
+        // Store current debug values to persist across Livewire re-renders
+        window.debugValues = {
+            connectionStatus: 'Ready',
+            processId: 'None',
+            echoStatus: 'Unknown',
+            executionTime: '-',
+            uxTime: '-'
+        };
+        
         // Global helper function to add terminal output (define early)
         window.addTerminalOutput = function(type, content) {
             console.log(`Adding terminal output: ${type} - ${content}`);
+            
+            // Track first output time for UX measurement
+            if ((type === 'out' || type === 'err') && window.commandStartTime && !window.firstOutputTime) {
+                window.firstOutputTime = performance.now();
+                const firstOutputDelay = window.firstOutputTime - window.commandStartTime;
+                console.log(`First output received after ${firstOutputDelay.toFixed(1)}ms`);
+            }
             
             // Get terminal output element once at function level
             const terminalOutput = document.getElementById('terminal-output');
@@ -161,27 +187,51 @@
                 const debugStatus = document.getElementById('command-status-debug');
                 if (debugStatus) {
                     const timestamp = new Date().toLocaleTimeString();
-                    const debugLine = `<div class="text-blue-400">[${timestamp}] ${content}</div>`;
-                    debugStatus.innerHTML += debugLine;
-                    // Store debug content for persistence
-                    window.debugContent += debugLine;
+                    // Skip showing execution time in debug log since it's shown in debug area
+                    if (!content.includes('Execution time:')) {
+                        const debugLine = `<div class="text-blue-400">[${timestamp}] ${content}</div>`;
+                        debugStatus.innerHTML += debugLine;
+                        // Store debug content for persistence
+                        window.debugContent += debugLine;
+                    }
                 }
                 
                 // Update connection status for completed commands and extract execution time
                 if (content.includes('Command completed') || content.includes('Command failed')) {
-                    const connectionStatus = document.getElementById('connection-status');
-                    if (connectionStatus) {
-                        connectionStatus.textContent = 'Ready';
-                    }
+                    window.updateDebugElement('connection-status', 'Ready');
                     
                     // Extract and display execution time
                     const executionTimeMatch = content.match(/Execution time: ([^)]+)/);
                     if (executionTimeMatch) {
-                        const executionTimeElement = document.getElementById('execution-time');
-                        if (executionTimeElement) {
-                            executionTimeElement.textContent = executionTimeMatch[1];
-                            executionTimeElement.style.color = '#10b981'; // green-500
+                        window.updateDebugElement('execution-time', executionTimeMatch[1], '#10b981');
+                    }
+                    
+                    // Calculate and display total user experience time
+                    if (window.commandStartTime) {
+                        const commandEndTime = performance.now();
+                        const totalUxTime = commandEndTime - window.commandStartTime;
+                        
+                        let uxTimeFormatted;
+                        if (totalUxTime < 1000) {
+                            uxTimeFormatted = totalUxTime.toFixed(1) + 'ms';
+                        } else {
+                            uxTimeFormatted = (totalUxTime / 1000).toFixed(3) + 's';
                         }
+                        
+                        window.updateDebugElement('ux-time', uxTimeFormatted, '#3b82f6');
+                        
+                        // Also display first output time if available
+                        if (window.firstOutputTime) {
+                            const firstOutputDelay = window.firstOutputTime - window.commandStartTime;
+                            const firstOutputFormatted = firstOutputDelay < 1000 ? 
+                                firstOutputDelay.toFixed(1) + 'ms' : 
+                                (firstOutputDelay / 1000).toFixed(3) + 's';
+                            console.log('UX Timing - Total: ' + uxTimeFormatted + ', First Output: ' + firstOutputFormatted);
+                        }
+                        
+                        // Reset timing variables for next command
+                        window.commandStartTime = null;
+                        window.firstOutputTime = null;
                     }
                     
                     // Update button state directly without Livewire to prevent re-render
@@ -229,6 +279,45 @@
                 debugStatus.innerHTML = window.debugContent;
             }
         };
+        
+        // Helper function to safely update debug elements
+        window.updateDebugElement = function(elementId, value, color = null) {
+            // Store the value persistently with proper key mapping
+            const keyMap = {
+                'connection-status': 'connectionStatus',
+                'process-id': 'processId',
+                'echo-status': 'echoStatus',
+                'execution-time': 'executionTime',
+                'ux-time': 'uxTime'
+            };
+            const key = keyMap[elementId];
+            if (window.debugValues && key && window.debugValues.hasOwnProperty(key)) {
+                window.debugValues[key] = value;
+            }
+            
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value;
+                if (color) element.style.color = color;
+                console.log(`Updated ${elementId} to: ${value}`);
+                return true;
+            } else {
+                console.log(`Debug element ${elementId} not found (debug panel may be hidden) - stored value: ${value}`);
+                return false;
+            }
+        };
+        
+        // Function to restore all debug values after Livewire re-renders
+        window.restoreAllDebugValues = function() {
+            if (window.debugValues) {
+                console.log('Restoring debug values:', window.debugValues);
+                window.updateDebugElement('connection-status', window.debugValues.connectionStatus);
+                window.updateDebugElement('process-id', window.debugValues.processId);
+                window.updateDebugElement('echo-status', window.debugValues.echoStatus);
+                window.updateDebugElement('execution-time', window.debugValues.executionTime);
+                window.updateDebugElement('ux-time', window.debugValues.uxTime);
+            }
+        };
 
 
         // Listen for Livewire events to subscribe to WebSocket process
@@ -240,6 +329,7 @@
                 setTimeout(() => {
                     window.restoreTerminalContent();
                     window.restoreDebugContent();
+                    window.restoreAllDebugValues();
                 }, 10);
             });
             
@@ -247,12 +337,20 @@
                 console.log('8. Subscribe to process event received:', data);
                 const processId = data[0].process_id;
                 
-                // Update debug info (only if debug section is visible)
+                // Start timing for user experience measurement
+                window.commandStartTime = performance.now();
+                window.firstOutputTime = null;
+                console.log('Started UX timing measurement');
+                
+                // Update debug info (always update, regardless of visibility)
                 const processIdElement = document.getElementById('process-id');
                 const connectionStatusElement = document.getElementById('connection-status');
                 
-                if (processIdElement) processIdElement.textContent = processId;
-                if (connectionStatusElement) connectionStatusElement.textContent = 'Connecting...';
+                console.log('Updating debug info for process:', processId);
+                
+                // Update debug elements using helper function
+                window.updateDebugElement('process-id', processId);
+                window.updateDebugElement('connection-status', 'Connecting...');
                 
                 const terminalOutput = document.getElementById('terminal-output');
                 const terminalSection = document.getElementById('terminal-section');
@@ -262,14 +360,16 @@
                     terminalOutput.textContent = '';
                     window.terminalContent = ''; // Also clear stored content
                     
-                    // Add separator for new command in debug status instead of clearing
+                    // Clear debug status for new command instead of accumulating
                     const debugStatus = document.getElementById('command-status-debug');
-                    if (debugStatus && window.debugContent) {
-                        const timestamp = new Date().toLocaleTimeString();
-                        const separator = `<div class="text-gray-400 border-t border-gray-600 pt-2 mt-2">[${timestamp}] --- Session ended ---</div>`;
-                        debugStatus.innerHTML += separator;
-                        window.debugContent += separator;
+                    if (debugStatus) {
+                        debugStatus.innerHTML = '';
+                        window.debugContent = ''; // Clear stored debug content for fresh start
                     }
+                    
+                    // Reset debug values for new command
+                    window.updateDebugElement('execution-time', '-');
+                    window.updateDebugElement('ux-time', '-');
                     
                     // Subscribe to WebSocket channel if Echo is available
                     if (window.Echo) {
@@ -290,18 +390,19 @@
                                 })
                                 .error((error) => {
                                     console.error('WebSocket channel error:', error);
-                                    window.addTerminalOutput('error', `WebSocket error: ${error.message || 'Connection failed'}`);
+                                    window.addTerminalOutput('error', 'WebSocket error: ' + (error.message || 'Connection failed'));
                                 });
                                 
-                            if (connectionStatusElement) connectionStatusElement.textContent = 'Connected';
+                            window.updateDebugElement('connection-status', 'Connected');
+                            window.updateDebugElement('echo-status', 'Connected', '#10b981');
                             
                         } catch (error) {
                             console.error('9. Failed to subscribe to channel:', error);
-                            if (connectionStatusElement) connectionStatusElement.textContent = 'Connection Failed';
+                            window.updateDebugElement('connection-status', 'Connection Failed');
                         }
                     } else {
                         console.error('9. Echo not available for WebSocket subscription');
-                        if (connectionStatusElement) connectionStatusElement.textContent = 'Echo Missing';
+                        window.updateDebugElement('connection-status', 'Echo Missing');
                     }
                 }
             });
