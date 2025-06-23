@@ -9,8 +9,8 @@
         "php": "^8.4",
         "filament/filament": "^4.0",
         "laravel/framework": "^12.19.3",
-        "laravel/reverb": "^1.5",
         "laravel/tinker": "^2.10.1",
+        "predis/predis": "^2.2",
         "spatie/ssh": "^1.13"
     },
     "require-dev": {

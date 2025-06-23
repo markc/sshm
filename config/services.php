@@ -42,6 +42,13 @@ return [
         'default_key_type' => env('SSH_DEFAULT_KEY_TYPE', 'ed25519'),
         'strict_host_checking' => env('SSH_STRICT_HOST_CHECKING', false),
         'timeout' => env('SSH_TIMEOUT', 300), // 5 minutes default timeout
+
+        // Performance optimization settings
+        'max_connections' => env('SSH_MAX_CONNECTIONS', 20),
+        'connection_timeout' => env('SSH_CONNECTION_TIMEOUT', 300), // 5 minutes
+        'multiplexing_enabled' => env('SSH_MULTIPLEXING_ENABLED', true),
+        'connection_reuse_timeout' => env('SSH_CONNECTION_REUSE_TIMEOUT', 60), // 1 minute
+        'fast_mode_default' => env('SSH_FAST_MODE_DEFAULT', true),
     ],
 
 ];
