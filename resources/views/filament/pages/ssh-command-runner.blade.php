@@ -1,42 +1,41 @@
 <x-filament-panels::page>
-    <!-- CSS Styles for Terminal -->
-    <style>
-        /* Clean separation between sections - match internal padding */
-        .fi-section-container {
-            margin-bottom: 1.5rem !important;
-        }
-        
-        .terminal-output {
-            color: #ffffff;
-        }
-        
-        .terminal-err {
-            color: #ff6b6b;
-        }
-        
-        .terminal-status {
-            color: #74c0fc;
-        }
-        
-        #terminal-output::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        #terminal-output::-webkit-scrollbar-track {
-            background: #2d3748;
-        }
-        
-        #terminal-output::-webkit-scrollbar-thumb {
-            background: #4a5568;
-            border-radius: 4px;
-        }
-        
-        #terminal-output::-webkit-scrollbar-thumb:hover {
-            background: #718096;
-        }
-    </style>
-
     <div class="fi-main-container mx-auto max-w-7xl">
+        <!-- CSS Styles for Terminal -->
+        <style>
+            /* Clean separation between sections - match internal padding */
+            .fi-section-container {
+                margin-bottom: 1.5rem !important;
+            }
+            
+            .terminal-output {
+                color: #ffffff;
+            }
+            
+            .terminal-err {
+                color: #ff6b6b;
+            }
+            
+            .terminal-status {
+                color: #74c0fc;
+            }
+            
+            #terminal-output::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            #terminal-output::-webkit-scrollbar-track {
+                background: #2d3748;
+            }
+            
+            #terminal-output::-webkit-scrollbar-thumb {
+                background: #4a5568;
+                border-radius: 4px;
+            }
+            
+            #terminal-output::-webkit-scrollbar-thumb:hover {
+                background: #718096;
+            }
+        </style>
         <div class="space-y-6">
             <!-- Section 1: Command Input -->
             <section class="fi-section-container">
