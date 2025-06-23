@@ -30,6 +30,8 @@ class SshCommandRunner extends Page
 
     public bool $useBashMode = false;
 
+    public bool $fastMode = true;
+
     public bool $showDebug = false;
 
     public bool $hasTerminalOutput = false;
@@ -138,7 +140,14 @@ class SshCommandRunner extends Page
                                     Toggle::make('useBashMode')
                                         ->label('Use Bash Mode')
                                         ->inline(true)
-                                        ->extraAttributes(['class' => 'mt-4']),
+                                        ->extraAttributes(['class' => 'mt-2']),
+
+                                    // Fast Mode Toggle
+                                    Toggle::make('fastMode')
+                                        ->label('Fast Mode (Speed > Streaming)')
+                                        ->inline(true)
+                                        ->default(true)
+                                        ->extraAttributes(['class' => 'mt-2']),
                                 ])->columnSpan(1),
                             ])
                             ->columnSpan(1),
@@ -177,8 +186,8 @@ class SshCommandRunner extends Page
         \Illuminate\Support\Facades\Cache::put("process:{$processId}:user", auth()->id(), now()->addHours(2));
         \Illuminate\Support\Facades\Cache::put("process:{$processId}:host", $this->selectedHost, now()->addHours(2));
 
-        // Dispatch the job to the queue for execution with bash mode flag
-        \App\Jobs\RunSshCommand::dispatch($this->command, $processId, auth()->id(), (int) $this->selectedHost, $this->useBashMode);
+        // Dispatch the job to the queue for execution with bash mode and fast mode flags
+        \App\Jobs\RunSshCommand::dispatch($this->command, $processId, auth()->id(), (int) $this->selectedHost, $this->useBashMode, $this->fastMode);
 
         // Notify frontend to subscribe to WebSocket channel
         $this->dispatch('subscribe-to-process', [

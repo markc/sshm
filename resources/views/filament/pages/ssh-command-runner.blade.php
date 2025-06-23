@@ -43,6 +43,7 @@
                                     <div>Status: <span id="connection-status">Checking JavaScript...</span></div>
                                     <div>Process ID: <span id="process-id">None</span></div>
                                     <div>Echo: <span id="echo-status">Unknown</span></div>
+                                    <div>Last Execution Time: <span id="execution-time" class="font-mono text-green-400">-</span></div>
                                     <div id="command-status-debug" class="text-sm mt-6"></div>
                                 </div>
                                 <!-- Hidden host selector for JavaScript access -->
@@ -128,10 +129,14 @@
         
         // Store terminal content globally to persist across Livewire re-renders
         window.terminalContent = window.terminalContent || '';
+        window.debugContent = window.debugContent || '';
         
         // Global helper function to add terminal output (define early)
         window.addTerminalOutput = function(type, content) {
             console.log(`Adding terminal output: ${type} - ${content}`);
+            
+            // Get terminal output element once at function level
+            const terminalOutput = document.getElementById('terminal-output');
             
             // Add only actual command output to persistent storage
             if (type === 'out' || type === 'err') {
@@ -142,7 +147,6 @@
                 }
                 
                 // Update the DOM element if it exists
-                const terminalOutput = document.getElementById('terminal-output');
                 if (terminalOutput) {
                     if (type === 'out') {
                         terminalOutput.textContent += content + '\n';
@@ -157,14 +161,27 @@
                 const debugStatus = document.getElementById('command-status-debug');
                 if (debugStatus) {
                     const timestamp = new Date().toLocaleTimeString();
-                    debugStatus.innerHTML += `<div class="text-blue-400">[${timestamp}] ${content}</div>`;
+                    const debugLine = `<div class="text-blue-400">[${timestamp}] ${content}</div>`;
+                    debugStatus.innerHTML += debugLine;
+                    // Store debug content for persistence
+                    window.debugContent += debugLine;
                 }
                 
-                // Update connection status for completed commands
+                // Update connection status for completed commands and extract execution time
                 if (content.includes('Command completed') || content.includes('Command failed')) {
                     const connectionStatus = document.getElementById('connection-status');
                     if (connectionStatus) {
                         connectionStatus.textContent = 'Ready';
+                    }
+                    
+                    // Extract and display execution time
+                    const executionTimeMatch = content.match(/Execution time: ([^)]+)/);
+                    if (executionTimeMatch) {
+                        const executionTimeElement = document.getElementById('execution-time');
+                        if (executionTimeElement) {
+                            executionTimeElement.textContent = executionTimeMatch[1];
+                            executionTimeElement.style.color = '#10b981'; // green-500
+                        }
                     }
                     
                     // Update button state directly without Livewire to prevent re-render
@@ -191,7 +208,6 @@
             }
             
             // Auto-scroll terminal output if element exists
-            const terminalOutput = document.getElementById('terminal-output');
             if (terminalOutput) {
                 terminalOutput.scrollTop = terminalOutput.scrollHeight;
             }
@@ -205,6 +221,14 @@
                 terminalOutput.scrollTop = terminalOutput.scrollHeight;
             }
         };
+        
+        // Function to restore debug content after Livewire re-renders
+        window.restoreDebugContent = function() {
+            const debugStatus = document.getElementById('command-status-debug');
+            if (debugStatus && window.debugContent) {
+                debugStatus.innerHTML = window.debugContent;
+            }
+        };
 
 
         // Listen for Livewire events to subscribe to WebSocket process
@@ -213,7 +237,10 @@
             
             // Restore terminal content after any Livewire update
             window.Livewire.hook('morph.updated', () => {
-                setTimeout(window.restoreTerminalContent, 10);
+                setTimeout(() => {
+                    window.restoreTerminalContent();
+                    window.restoreDebugContent();
+                }, 10);
             });
             
             Livewire.on('subscribe-to-process', (data) => {
@@ -235,10 +262,13 @@
                     terminalOutput.textContent = '';
                     window.terminalContent = ''; // Also clear stored content
                     
-                    // Clear debug status for new command
+                    // Add separator for new command in debug status instead of clearing
                     const debugStatus = document.getElementById('command-status-debug');
-                    if (debugStatus) {
-                        debugStatus.innerHTML = '';
+                    if (debugStatus && window.debugContent) {
+                        const timestamp = new Date().toLocaleTimeString();
+                        const separator = `<div class="text-gray-400 border-t border-gray-600 pt-2 mt-2">[${timestamp}] --- Session ended ---</div>`;
+                        debugStatus.innerHTML += separator;
+                        window.debugContent += separator;
                     }
                     
                     // Subscribe to WebSocket channel if Echo is available
