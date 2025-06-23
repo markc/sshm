@@ -167,6 +167,7 @@ class SshCommandRunner extends Page
         ]);
 
         $this->isCommandRunning = true;
+        $this->hasTerminalOutput = true;
 
         // Generate process ID and start SSH command directly via Livewire
         $processId = (string) \Illuminate\Support\Str::uuid();

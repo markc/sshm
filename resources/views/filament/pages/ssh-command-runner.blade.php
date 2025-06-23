@@ -13,7 +13,7 @@
             </section>
 
             <!-- Section 2: Terminal Output (conditionally shown) -->
-            <section class="fi-section-container" id="terminal-section" style="display: none;">
+            <section class="fi-section-container" id="terminal-section" style="display: {{ $hasTerminalOutput ? 'block' : 'none' }};">
                 <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                     <div class="fi-section-content-ctn">
                         <div class="fi-section-content p-8">
@@ -122,21 +122,29 @@
             
             if (terminalOutput) {
                 console.log('5. Terminal output element found');
-                connectionStatus.textContent = 'JavaScript Working';
+                if (connectionStatus) {
+                    connectionStatus.textContent = 'JavaScript Working';
+                }
             } else {
                 console.error('5. ERROR: Terminal output element not found');
-                connectionStatus.textContent = 'ERROR: Elements missing';
+                if (connectionStatus) {
+                    connectionStatus.textContent = 'ERROR: Elements missing';
+                }
             }
             
             // Check if Echo is available
             if (typeof window.Echo !== 'undefined' && window.Echo) {
                 console.log('6. Laravel Echo is available!');
-                echoStatus.textContent = 'Available';
-                echoStatus.style.color = 'green';
+                if (echoStatus) {
+                    echoStatus.textContent = 'Available';
+                    echoStatus.style.color = 'green';
+                }
             } else {
                 console.log('6. Laravel Echo is NOT available');
-                echoStatus.textContent = 'Missing';
-                echoStatus.style.color = 'red';
+                if (echoStatus) {
+                    echoStatus.textContent = 'Missing';
+                    echoStatus.style.color = 'red';
+                }
                 
                 // Check what's actually available
                 console.log('Available global objects:');
@@ -147,28 +155,29 @@
             }
         });
         
+        // Store terminal content globally to persist across Livewire re-renders
+        window.terminalContent = window.terminalContent || '';
+        
         // Global helper function to add terminal output (define early)
         window.addTerminalOutput = function(type, content) {
             console.log(`Adding terminal output: ${type} - ${content}`);
-            const terminalOutput = document.getElementById('terminal-output');
-            const terminalSection = document.getElementById('terminal-section');
             
-            if (!terminalOutput) {
-                console.error('Terminal output element not found!');
-                return;
-            }
-
-            // Add only actual command output to terminal (completely clean)
+            // Add only actual command output to persistent storage
             if (type === 'out' || type === 'err') {
-                // Show terminal section when we have actual output
-                if (terminalSection) {
-                    terminalSection.style.display = 'block';
+                if (type === 'out') {
+                    window.terminalContent += content + '\n';
+                } else if (type === 'err') {
+                    window.terminalContent += content + '\n'; // Store as plain text, we'll style on display
                 }
                 
-                if (type === 'out') {
-                    terminalOutput.textContent += content + '\n';
-                } else if (type === 'err') {
-                    terminalOutput.innerHTML += `<span class="terminal-err">${content}</span>\n`;
+                // Update the DOM element if it exists
+                const terminalOutput = document.getElementById('terminal-output');
+                if (terminalOutput) {
+                    if (type === 'out') {
+                        terminalOutput.textContent += content + '\n';
+                    } else if (type === 'err') {
+                        terminalOutput.innerHTML += `<span class="terminal-err">${content}</span>\n`;
+                    }
                 }
             }
             
@@ -186,10 +195,40 @@
                     if (connectionStatus) {
                         connectionStatus.textContent = 'Ready';
                     }
+                    
+                    // Update button state directly without Livewire to prevent re-render
+                    const commandButton = document.querySelector('[data-livewire-action="startTerminalCommand"], [data-livewire-action="stopTerminalCommand"]');
+                    if (commandButton) {
+                        // Find the button text and icon elements
+                        const buttonText = commandButton.querySelector('span:not([data-slot])');
+                        const buttonIcon = commandButton.querySelector('[data-slot="icon"]');
+                        
+                        if (buttonText) buttonText.textContent = 'Run Command';
+                        if (buttonIcon) {
+                            buttonIcon.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"></path></svg>';
+                        }
+                        
+                        // Reset button color classes
+                        commandButton.className = commandButton.className.replace(/bg-custom-\d+-500|bg-danger-\d+/g, 'bg-primary-600');
+                    }
+                    
+                    // Also notify Livewire but without forcing re-render
+                    if (window.Livewire) {
+                        window.Livewire.dispatch('setRunningState', { isRunning: false });
+                    }
                 }
             }
             
             terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        };
+        
+        // Function to restore terminal content after Livewire re-renders
+        window.restoreTerminalContent = function() {
+            const terminalOutput = document.getElementById('terminal-output');
+            if (terminalOutput && window.terminalContent) {
+                terminalOutput.textContent = window.terminalContent;
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            }
         };
 
 
@@ -197,11 +236,16 @@
         document.addEventListener('livewire:init', () => {
             console.log('7. Livewire initialized');
             
+            // Restore terminal content after any Livewire update
+            window.Livewire.hook('morph.updated', () => {
+                setTimeout(window.restoreTerminalContent, 10);
+            });
+            
             Livewire.on('subscribe-to-process', (data) => {
                 console.log('8. Subscribe to process event received:', data);
                 const processId = data[0].process_id;
                 
-                // Update debug info
+                // Update debug info (only if debug section is visible)
                 const processIdElement = document.getElementById('process-id');
                 const connectionStatusElement = document.getElementById('connection-status');
                 
@@ -214,11 +258,7 @@
                 if (terminalOutput) {
                     // Clear terminal for new command
                     terminalOutput.textContent = '';
-                    
-                    // Hide terminal section until we have output
-                    if (terminalSection) {
-                        terminalSection.style.display = 'none';
-                    }
+                    window.terminalContent = ''; // Also clear stored content
                     
                     // Clear debug status for new command
                     const debugStatus = document.getElementById('command-status-debug');
