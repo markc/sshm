@@ -1,6 +1,6 @@
 <div>
     <style>
-        .fi-section-container { margin-bottom: 1.5rem !important; }
+        .fi-section-container { margin-bottom: 1.5rem !important; margin-top: 1.5rem !important; }
         .terminal-output { color: #ffffff; }
         .terminal-err { color: #ff6b6b; }
         .terminal-status { color: #74c0fc; }
@@ -190,7 +190,11 @@
                 }
             }
             
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            // Auto-scroll terminal output if element exists
+            const terminalOutput = document.getElementById('terminal-output');
+            if (terminalOutput) {
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            }
         };
         
         // Function to restore terminal content after Livewire re-renders
