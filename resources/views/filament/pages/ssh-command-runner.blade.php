@@ -1,5 +1,11 @@
+@php
+    $hasTerminalOutput = $this->hasTerminalOutput;
+    $showDebug = $this->showDebug;
+    $selectedHost = $this->selectedHost;
+@endphp
+
 <x-filament-panels::page>
-    <div class="fi-main-container mx-auto max-w-7xl">
+    <div class="space-y-6">
         <!-- CSS Styles for Terminal -->
         <style>
             /* Clean separation between sections - match internal padding */
@@ -36,7 +42,6 @@
                 background: #718096;
             }
         </style>
-        <div class="space-y-6">
             <!-- Section 1: Command Input -->
             <section class="fi-section-container">
                 <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
@@ -298,7 +303,6 @@
                 }
             });
         });
-            </script>
-        </div>
+        </script>
     </div>
 </x-filament-panels::page>
