@@ -133,6 +133,9 @@
         window.addTerminalOutput = function(type, content) {
             console.log(`Adding terminal output: ${type} - ${content}`);
             
+            // Get terminal output element once at function level
+            const terminalOutput = document.getElementById('terminal-output');
+            
             // Add only actual command output to persistent storage
             if (type === 'out' || type === 'err') {
                 if (type === 'out') {
@@ -142,7 +145,6 @@
                 }
                 
                 // Update the DOM element if it exists
-                const terminalOutput = document.getElementById('terminal-output');
                 if (terminalOutput) {
                     if (type === 'out') {
                         terminalOutput.textContent += content + '\n';
@@ -191,7 +193,6 @@
             }
             
             // Auto-scroll terminal output if element exists
-            const terminalOutput = document.getElementById('terminal-output');
             if (terminalOutput) {
                 terminalOutput.scrollTop = terminalOutput.scrollHeight;
             }

@@ -26,7 +26,8 @@ class RunSshCommand implements ShouldQueue
         public string $processId,
         public int $userId,
         public int $hostId,
-        public bool $useBashMode = false
+        public bool $useBashMode = false,
+        public bool $fastMode = true  // New: prioritize speed over real-time streaming
     ) {}
 
     /**
@@ -47,25 +48,68 @@ class RunSshCommand implements ShouldQueue
             $modeMessage = $this->useBashMode ? "Executing with bash -ci: {$this->command}" : "Executing: {$this->command}";
             SshOutputReceived::dispatch($this->processId, 'status', $modeMessage);
 
-            // Create the process
-            $process = Process::start($sshCommand, function (string $type, string $output) {
-                // Stream all output in real-time
-                $outputType = $type === SymfonyProcess::ERR ? 'err' : 'out';
-
-                // Split output into lines for better terminal display
-                $lines = explode("\n", $output);
-                foreach ($lines as $line) {
-                    if (! empty(trim($line))) {
-                        SshOutputReceived::dispatch($this->processId, $outputType, $line);
+            if ($this->fastMode) {
+                // Fast mode: Execute command and send all output at once
+                $result = Process::run($sshCommand);
+                
+                // Send all output at once for maximum speed
+                if ($result->output()) {
+                    $lines = explode("\n", trim($result->output()));
+                    foreach ($lines as $line) {
+                        if (!empty(trim($line))) {
+                            SshOutputReceived::dispatch($this->processId, 'out', $line);
+                        }
                     }
                 }
-            });
+                
+                if ($result->errorOutput()) {
+                    $lines = explode("\n", trim($result->errorOutput()));
+                    foreach ($lines as $line) {
+                        if (!empty(trim($line))) {
+                            SshOutputReceived::dispatch($this->processId, 'err', $line);
+                        }
+                    }
+                }
+            } else {
+                // Streaming mode: Buffer for collecting output chunks
+                $outputBuffer = '';
+                $errorBuffer = '';
+                $lastFlushTime = microtime(true);
+                $flushInterval = 0.05; // Flush every 50ms for better responsiveness
 
-            // Store the PID for process control
-            Cache::put("process:{$this->processId}:pid", $process->id(), now()->addHours(2));
+                // Create the process
+                $process = Process::start($sshCommand, function (string $type, string $output) use (&$outputBuffer, &$errorBuffer, &$lastFlushTime, $flushInterval) {
+                    $currentTime = microtime(true);
+                    $outputType = $type === SymfonyProcess::ERR ? 'err' : 'out';
 
-            // Wait for process completion
-            $result = $process->wait();
+                    // Accumulate output in buffers
+                    if ($outputType === 'err') {
+                        $errorBuffer .= $output;
+                    } else {
+                        $outputBuffer .= $output;
+                    }
+
+                    // Flush buffers if enough time has passed or buffer is large
+                    $timeSinceFlush = $currentTime - $lastFlushTime;
+                    $shouldFlush = $timeSinceFlush >= $flushInterval || 
+                                  strlen($outputBuffer) > 512 || 
+                                  strlen($errorBuffer) > 512;
+
+                    if ($shouldFlush) {
+                        $this->flushBuffers($outputBuffer, $errorBuffer);
+                        $lastFlushTime = $currentTime;
+                    }
+                });
+
+                // Store the PID for process control
+                Cache::put("process:{$this->processId}:pid", $process->id(), now()->addHours(2));
+
+                // Wait for process completion
+                $result = $process->wait();
+
+                // Flush any remaining buffered output
+                $this->flushBuffers($outputBuffer, $errorBuffer);
+            }
 
             // Broadcast completion status
             if ($result->successful()) {
@@ -156,6 +200,35 @@ class RunSshCommand implements ShouldQueue
         );
 
         return $sshCommand;
+    }
+
+    /**
+     * Flush accumulated output buffers to WebSocket
+     */
+    private function flushBuffers(string &$outputBuffer, string &$errorBuffer): void
+    {
+        // Process standard output buffer
+        if (!empty($outputBuffer)) {
+            // Send as complete lines for better terminal display
+            $lines = explode("\n", trim($outputBuffer));
+            foreach ($lines as $line) {
+                if (!empty(trim($line))) {
+                    SshOutputReceived::dispatch($this->processId, 'out', $line);
+                }
+            }
+            $outputBuffer = '';
+        }
+
+        // Process error output buffer
+        if (!empty($errorBuffer)) {
+            $lines = explode("\n", trim($errorBuffer));
+            foreach ($lines as $line) {
+                if (!empty(trim($line))) {
+                    SshOutputReceived::dispatch($this->processId, 'err', $line);
+                }
+            }
+            $errorBuffer = '';
+        }
     }
 
     /**
