@@ -11,7 +11,7 @@ use Spatie\Ssh\Ssh;
 
 /**
  * Ultra-Fast WebSocket Controller for Xterm.js
- * 
+ *
  * Optimized for maximum performance with zero-latency streaming:
  * - Direct binary data pipe from SSH to WebSocket
  * - No JSON encoding/decoding overhead
@@ -79,7 +79,7 @@ class XtermWebSocketController extends Controller
         $useBash = $request->boolean('use_bash', false);
 
         $sessionData = cache()->get("ssh_session:{$sessionId}");
-        if (!$sessionData) {
+        if (! $sessionData) {
             return response()->json([
                 'success' => false,
                 'error' => 'Session not found or expired',
@@ -87,20 +87,23 @@ class XtermWebSocketController extends Controller
         }
 
         $host = SshHost::find($sessionData['host_id']);
-        if (!$host) {
+        if (! $host) {
             return response()->json([
                 'success' => false,
                 'error' => 'SSH host not found',
             ], 404);
         }
 
-        // Execute command asynchronously with real-time broadcasting
-        $this->executeCommandWithBroadcasting($sessionId, $host, $command, $useBash);
+        // For Phase 1, execute command synchronously and return results
+        $results = $this->executeCommandDirectly($host, $command, $useBash);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Command execution started',
+            'success' => $results['success'],
+            'message' => $results['success'] ? 'Command executed successfully' : 'Command failed',
             'session_id' => $sessionId,
+            'output' => $results['output'],
+            'error' => $results['error'],
+            'exit_code' => $results['exit_code'],
         ]);
     }
 
@@ -114,10 +117,10 @@ class XtermWebSocketController extends Controller
         try {
             // Get optimized SSH connection from pool
             $ssh = $this->connectionPool->getSpatieConnection($host);
-            
+
             // Build command
-            $finalCommand = $useBash 
-                ? "bash -ci " . escapeshellarg($command)
+            $finalCommand = $useBash
+                ? 'bash -ci ' . escapeshellarg($command)
                 : $command;
 
             Log::info('WebSocket SSH command execution started', [
@@ -129,8 +132,8 @@ class XtermWebSocketController extends Controller
 
             // Broadcast connection status
             broadcast(new \App\Events\SshTerminalOutput(
-                $sessionId, 
-                "🚀 Executing: {$command}", 
+                $sessionId,
+                "🚀 Executing: {$command}",
                 'status'
             ));
 
@@ -145,8 +148,8 @@ class XtermWebSocketController extends Controller
 
             // Broadcast completion status
             broadcast(new \App\Events\SshTerminalOutput(
-                $sessionId, 
-                "✅ Command completed in " . number_format($executionTime, 3) . "s", 
+                $sessionId,
+                '✅ Command completed in ' . number_format($executionTime, 3) . 's',
                 'status'
             ));
 
@@ -160,8 +163,8 @@ class XtermWebSocketController extends Controller
 
             // Broadcast error
             broadcast(new \App\Events\SshTerminalOutput(
-                $sessionId, 
-                "❌ Error: {$e->getMessage()}", 
+                $sessionId,
+                "❌ Error: {$e->getMessage()}",
                 'stderr'
             ));
         }
@@ -183,7 +186,7 @@ class XtermWebSocketController extends Controller
 
         // For now, this is a placeholder for the interactive functionality
         // Will be enhanced in Phase 2 with true PTY support
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Input received',
@@ -201,10 +204,10 @@ class XtermWebSocketController extends Controller
         ]);
 
         $sessionId = $request->string('session_id');
-        
+
         // Remove session from cache
         cache()->forget("ssh_session:{$sessionId}");
-        
+
         // Cleanup connection pool if needed
         $this->connectionPool->closeSession($sessionId);
 
@@ -226,7 +229,7 @@ class XtermWebSocketController extends Controller
         $sessionId = $request->string('session_id');
         $sessionData = cache()->get("ssh_session:{$sessionId}");
 
-        if (!$sessionData) {
+        if (! $sessionData) {
             return response()->json([
                 'exists' => false,
                 'message' => 'Session not found or expired',
@@ -242,5 +245,106 @@ class XtermWebSocketController extends Controller
                 'connection_pool' => $this->connectionPool->getStats(),
             ],
         ]);
+    }
+
+    /**
+     * Execute SSH command directly and return results (Phase 1 implementation)
+     */
+    private function executeCommandDirectly(SshHost $host, string $command, bool $useBash): array
+    {
+        $startTime = microtime(true);
+
+        try {
+            // Get SSH connection from pool
+            $ssh = $this->connectionPool->getSpatieConnection($host);
+
+            // Build final command
+            $finalCommand = $useBash
+                ? 'bash -ci ' . escapeshellarg($command)
+                : $command;
+
+            Log::info('Direct SSH command execution started', [
+                'host_id' => $host->id,
+                'command' => $command,
+                'use_bash' => $useBash,
+                'final_command' => $finalCommand,
+            ]);
+
+            // Execute command and capture output
+            $output = '';
+            $error = '';
+            $exitCode = 0;
+
+            try {
+                // Execute with output capture - Spatie SSH execute() returns a Process object
+                $process = $ssh->execute($finalCommand);
+
+                // Get the actual output string from the process
+                if ($process instanceof \Symfony\Component\Process\Process) {
+                    $output = $process->getOutput();
+                    $error = $process->getErrorOutput();
+                    $exitCode = $process->getExitCode() ?? 0;
+                } else {
+                    // Fallback for string result (older versions)
+                    $output = (string) $process;
+                    $exitCode = 0;
+                }
+
+                // If the result is empty, try to get stderr as well
+                if (empty($output) && ! empty($error)) {
+                    $output = $error; // Show errors as output for debugging
+                }
+
+            } catch (\Exception $sshException) {
+                $error = $sshException->getMessage();
+                $exitCode = 1;
+
+                Log::warning('SSH command execution error', [
+                    'host_id' => $host->id,
+                    'command' => $command,
+                    'error' => $error,
+                ]);
+            }
+
+            $executionTime = microtime(true) - $startTime;
+
+            // Ensure output is always a string for logging
+            $output = (string) $output;
+            $error = (string) $error;
+
+            Log::info('Direct SSH command execution completed', [
+                'host_id' => $host->id,
+                'command' => $command,
+                'execution_time' => $executionTime,
+                'output_length' => strlen($output),
+                'exit_code' => $exitCode,
+            ]);
+
+            return [
+                'success' => $exitCode === 0,
+                'output' => $output,
+                'error' => $error,
+                'exit_code' => $exitCode,
+                'execution_time' => $executionTime,
+            ];
+
+        } catch (\Exception $e) {
+            $executionTime = microtime(true) - $startTime;
+
+            Log::error('Direct SSH command execution failed', [
+                'host_id' => $host->id,
+                'command' => $command,
+                'error' => $e->getMessage(),
+                'execution_time' => $executionTime,
+            ]);
+
+            return [
+                'success' => false,
+                'output' => '',
+                'error' => $e->getMessage(),
+                'exit_code' => 1,
+                'execution_time' => $executionTime,
+            ];
+        }
     }
 }

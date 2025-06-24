@@ -179,8 +179,13 @@ class SshConnectionPoolService
             'active_connections' => count($this->connections),
             'max_connections' => $this->maxConnections,
             'connections' => array_map(function ($connection) {
+                // Handle both object and array cases (Redis cache returns arrays)
+                $hostName = is_array($connection['host']) ?
+                    $connection['host']['name'] :
+                    $connection['host']->name;
+
                 return [
-                    'host' => $connection['host']->name,
+                    'host' => $hostName,
                     'created_at' => $connection['created_at'],
                     'last_used' => $connection['last_used'],
                     'age' => time() - $connection['created_at'],
@@ -330,30 +335,30 @@ class SshConnectionPoolService
     {
         $redisKey = "sshm:session:{$sessionId}";
         $sessionData = Redis::get($redisKey);
-        
+
         if ($sessionData) {
             $session = json_decode($sessionData, true);
             if (isset($session['host_id'])) {
                 $host = SshHost::find($session['host_id']);
                 if ($host) {
                     $connectionKey = $this->getConnectionKey($host);
-                    
+
                     // Remove from in-memory connections
                     if (isset($this->connections[$connectionKey])) {
                         $this->closeConnection($this->connections[$connectionKey]);
                         unset($this->connections[$connectionKey]);
                     }
-                    
+
                     // Remove from Redis
                     Redis::del("sshm:connection:{$connectionKey}");
-                    
+
                     Log::debug('Closed SSH connection for session', [
                         'session_id' => $sessionId,
                         'host' => $host->name,
                     ]);
                 }
             }
-            
+
             // Remove session data
             Redis::del($redisKey);
         }
@@ -366,26 +371,41 @@ class SshConnectionPoolService
     {
         $connectionData = $this->getConnection($host);
         $spatieHost = $connectionData['host'];
-        
-        // Build Spatie SSH instance with connection pooling
-        $ssh = \Spatie\Ssh\Ssh::create($spatieHost->user, $spatieHost->hostname);
-        
-        if ($spatieHost->port && $spatieHost->port != 22) {
-            $ssh->usePort($spatieHost->port);
+
+        // Handle both object and array cases (Redis cache returns arrays)
+        if (is_array($spatieHost)) {
+            // Data from Redis (JSON decoded) - access as array
+            $user = $spatieHost['user'];
+            $hostname = $spatieHost['hostname'];
+            $port = $spatieHost['port'] ?? 22;
+            $identityFile = $spatieHost['identity_file'] ?? null;
+        } else {
+            // Data from memory - access as object
+            $user = $spatieHost->user;
+            $hostname = $spatieHost->hostname;
+            $port = $spatieHost->port ?? 22;
+            $identityFile = $spatieHost->identity_file ?? null;
         }
-        
-        if ($spatieHost->identity_file) {
-            $keyPath = $this->getKeyPath($spatieHost->identity_file);
+
+        // Build Spatie SSH instance with connection pooling
+        $ssh = \Spatie\Ssh\Ssh::create($user, $hostname);
+
+        if ($port && $port != 22) {
+            $ssh->usePort($port);
+        }
+
+        if ($identityFile) {
+            $keyPath = $this->getKeyPath($identityFile);
             if ($keyPath) {
                 $ssh->usePrivateKey($keyPath);
             }
         }
-        
+
         // Add connection multiplexing for performance
         $ssh->addExtraOption('-o ControlMaster=auto');
         $ssh->addExtraOption('-o ControlPath=' . $connectionData['control_path']);
         $ssh->addExtraOption('-o ControlPersist=60s');
-        
+
         // Performance optimizations
         $ssh->addExtraOption('-o ConnectTimeout=5');
         $ssh->addExtraOption('-o ServerAliveInterval=30');
@@ -394,7 +414,7 @@ class SshConnectionPoolService
         $ssh->addExtraOption('-o UserKnownHostsFile=/dev/null');
         $ssh->addExtraOption('-o LogLevel=ERROR');
         $ssh->addExtraOption('-o BatchMode=yes');
-        
+
         return $ssh;
     }
 
@@ -405,7 +425,7 @@ class SshConnectionPoolService
     {
         $settings = app(\App\Settings\SshSettings::class);
         $keyPath = $settings->getHomeDir() . "/.ssh/{$keyName}";
-        
+
         return file_exists($keyPath) ? $keyPath : null;
     }
 }

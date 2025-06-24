@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Models\SshHost;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Pages\Page;
@@ -16,7 +15,7 @@ use Filament\Support\Enums\MaxWidth;
 
 /**
  * Ultra-Fast Xterm.js WebSocket SSH Terminal
- * 
+ *
  * Performance-optimized SSH terminal using:
  * - Xterm.js with GPU acceleration (WebGL renderer)
  * - WebSocket for bidirectional real-time communication
@@ -26,20 +25,27 @@ use Filament\Support\Enums\MaxWidth;
 class XtermSshTerminal extends Page
 {
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-window';
+
     protected static ?string $navigationLabel = 'SSH Terminal';
+
     protected static ?int $navigationSort = 1;
-    
+
     protected string $view = 'filament.pages.xterm-ssh-terminal';
 
     // Form state
     public ?int $selectedHost = null;
+
     public string $command = '';
+
     public bool $useBash = false;
+
     public bool $showDebug = false;
 
     // Terminal state
     public bool $isConnected = false;
+
     public bool $isCommandRunning = false;
+
     public ?string $sessionId = null;
 
     /**
@@ -55,14 +61,27 @@ class XtermSshTerminal extends Page
      */
     public function mount(): void
     {
-        // Set default host if only one exists
-        $hosts = SshHost::where('active', true)->get();
-        if ($hosts->count() === 1) {
-            $this->selectedHost = $hosts->first()->id;
+        // Set default SSH host from settings
+        $settings = app(\App\Settings\SshSettings::class);
+        $defaultHost = $settings->getDefaultSshHost();
+
+        if ($defaultHost) {
+            // Find the host by name and set as selected
+            $host = SshHost::where('name', $defaultHost)->where('active', true)->first();
+            if ($host) {
+                $this->selectedHost = $host->id;
+            }
+        }
+
+        // Fallback: Set default host if only one exists and no default configured
+        if (! $this->selectedHost) {
+            $hosts = SshHost::where('active', true)->get();
+            if ($hosts->count() === 1) {
+                $this->selectedHost = $hosts->first()->id;
+            }
         }
 
         // Set default command from settings
-        $settings = app(\App\Settings\SshSettings::class);
         $this->command = $settings->getDefaultCommand() ?? 'ls -al';
     }
 
@@ -127,6 +146,24 @@ class XtermSshTerminal extends Page
                                                 ->pluck('name', 'id')
                                                 ->toArray();
                                         })
+                                        ->default(function () {
+                                            $settings = app(\App\Settings\SshSettings::class);
+                                            $defaultHost = $settings->getDefaultSshHost();
+
+                                            if ($defaultHost) {
+                                                $host = SshHost::where('name', $defaultHost)->where('active', true)->first();
+                                                if ($host) {
+                                                    return $host->id;
+                                                }
+                                            }
+
+                                            // Fallback: Set default host if only one exists
+                                            $hosts = SshHost::where('active', true)->get();
+                                            if ($hosts->count() === 1) {
+                                                return $hosts->first()->id;
+                                            }
+
+                                        })
                                         ->required()
                                         ->live()
                                         ->searchable(),
@@ -134,7 +171,6 @@ class XtermSshTerminal extends Page
                                     // Bash Mode toggle
                                     \Filament\Forms\Components\Toggle::make('useBash')
                                         ->label('Use Bash')
-                                        ->helperText('Execute with bash -ci for aliases and functions')
                                         ->inline(true)
                                         ->live(),
                                 ])->columnSpan(1),
@@ -149,33 +185,36 @@ class XtermSshTerminal extends Page
      */
     public function runCommand(): void
     {
-        if (!$this->selectedHost) {
+        if (! $this->selectedHost) {
             $this->addError('selectedHost', 'Please select an SSH host.');
+
             return;
         }
 
         if (empty(trim($this->command))) {
             $this->addError('command', 'Please enter a command to execute.');
+
             return;
         }
 
         $this->isCommandRunning = true;
-        
-        // Connect to terminal if not already connected
-        if (!$this->isConnected) {
-            $this->dispatch('connect-xterm-terminal', [
+
+        // Connect to terminal if not already connected, then execute command
+        if (! $this->isConnected) {
+            $this->dispatch('connect-and-execute-xterm-command', [
                 'hostId' => $this->selectedHost,
                 'useBash' => $this->useBash,
                 'showDebug' => $this->showDebug,
+                'command' => $this->command,
+            ]);
+        } else {
+            // Already connected, just execute command
+            $this->dispatch('execute-xterm-command', [
+                'command' => $this->command,
+                'hostId' => $this->selectedHost,
+                'useBash' => $this->useBash,
             ]);
         }
-
-        // Execute command in terminal
-        $this->dispatch('execute-xterm-command', [
-            'command' => $this->command,
-            'hostId' => $this->selectedHost,
-            'useBash' => $this->useBash,
-        ]);
     }
 
     /**
@@ -184,7 +223,7 @@ class XtermSshTerminal extends Page
     public function stopCommand(): void
     {
         $this->isCommandRunning = false;
-        
+
         // Dispatch stop command to frontend
         $this->dispatch('stop-xterm-command');
     }
@@ -194,13 +233,14 @@ class XtermSshTerminal extends Page
      */
     public function connectToHost(): void
     {
-        if (!$this->selectedHost) {
+        if (! $this->selectedHost) {
             $this->addError('selectedHost', 'Please select an SSH host.');
+
             return;
         }
 
         $this->isConnected = true;
-        
+
         // The actual connection will be handled by the frontend JavaScript
         $this->dispatch('connect-xterm-terminal', [
             'hostId' => $this->selectedHost,
@@ -216,7 +256,7 @@ class XtermSshTerminal extends Page
     {
         $this->isConnected = false;
         $this->sessionId = null;
-        
+
         $this->dispatch('disconnect-xterm-terminal');
     }
 
@@ -249,11 +289,34 @@ class XtermSshTerminal extends Page
     }
 
     /**
-     * Handle command completion (called from frontend)
+     * Set the running state (called from frontend via Livewire event)
+     */
+    public function setRunningState(bool $isRunning): void
+    {
+        $this->isCommandRunning = $isRunning;
+
+        if (! $isRunning) {
+            $this->sessionId = null;
+        }
+    }
+
+    /**
+     * Handle command completion (called from frontend) - DEPRECATED
+     * Use setRunningState instead
      */
     public function onCommandComplete(): void
     {
-        $this->isCommandRunning = false;
+        $this->setRunningState(false);
+    }
+
+    /**
+     * Get Livewire listeners for this component
+     */
+    protected function getListeners(): array
+    {
+        return [
+            'setRunningState' => 'setRunningState',
+        ];
     }
 
     /**
@@ -267,22 +330,22 @@ class XtermSshTerminal extends Page
                 ->icon('heroicon-o-play')
                 ->color('success')
                 ->action('connectToHost')
-                ->visible(!$this->isConnected),
-                
+                ->visible(! $this->isConnected),
+
             Action::make('execute')
                 ->label('Run Command')
                 ->icon('heroicon-o-play')
                 ->color('primary')
                 ->action('executeCommand')
                 ->visible($this->isConnected),
-                
+
             Action::make('clear')
                 ->label('Clear')
                 ->icon('heroicon-o-trash')
                 ->color('gray')
                 ->action('clearTerminal')
                 ->visible($this->isConnected),
-                
+
             Action::make('disconnect')
                 ->label('Disconnect')
                 ->icon('heroicon-o-stop')

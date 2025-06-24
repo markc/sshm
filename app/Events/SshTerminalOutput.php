@@ -2,9 +2,7 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -12,7 +10,7 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Ultra-Fast SSH Terminal Output Event
- * 
+ *
  * Optimized for real-time terminal streaming with minimal overhead:
  * - Binary data support for maximum performance
  * - Private channels for security
@@ -20,11 +18,16 @@ use Illuminate\Queue\SerializesModels;
  */
 class SshTerminalOutput implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public string $sessionId;
+
     public string $data;
+
     public string $type; // 'stdout', 'stderr', 'status'
+
     public float $timestamp;
 
     /**
