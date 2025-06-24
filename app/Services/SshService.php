@@ -166,15 +166,13 @@ class SshService
                 // In debug mode, show all output including SSH messages
                 $process = $ssh->execute($finalCommand);
             } else {
-                // In normal mode, filter out job control messages (but preserve bash wrapping if used)
+                // In normal mode, execute command without filtering to avoid output truncation
+                // The hybrid terminal frontend will handle message filtering instead
                 if ($useBash) {
-                    // If using bash, apply filtering after bash execution but preserve exit code
-                    $wrappedCommand = "({$finalCommand}) 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'; exit \${PIPESTATUS[0]}";
+                    $process = $ssh->execute($finalCommand);
                 } else {
-                    // Standard filtering for non-bash commands but preserve exit code
-                    $wrappedCommand = "(bash -c '{$finalCommand}') 2>&1 | grep -v 'cannot set terminal process group' | grep -v 'no job control in this shell'; exit \${PIPESTATUS[0]}";
+                    $process = $ssh->execute($finalCommand);
                 }
-                $process = $ssh->execute($wrappedCommand);
             }
 
             // Clean up the temporary key file

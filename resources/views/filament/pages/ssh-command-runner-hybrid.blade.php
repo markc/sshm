@@ -408,6 +408,12 @@
             
             debugLog(`💻 Terminal output [${type}]:`, content);
             
+            // Filter out SSH warning messages for both output and error types
+            if (shouldFilterSSHMessage(content)) {
+                debugLog(`🚫 Filtered SSH warning: ${content}`);
+                return;
+            }
+            
             // Only show actual command output in terminal - move status to debug
             if (type === 'output') {
                 terminalOutput.textContent += content + '\n';
@@ -428,6 +434,24 @@
                 // Status messages go to debug panel only
                 addToDebugLog(content);
             }
+        }
+        
+        // Filter function for SSH warning messages
+        function shouldFilterSSHMessage(content) {
+            if (!content || typeof content !== 'string') {
+                return false;
+            }
+            
+            const sshWarnings = [
+                'bash: cannot set terminal process group',
+                'bash: no job control in this shell',
+                'Warning: Permanently added',
+                'Pseudo-terminal will not be allocated',
+                'stdin: is not a tty'
+            ];
+            
+            // Check if the content contains any SSH warning patterns
+            return sshWarnings.some(warning => content.includes(warning));
         }
         
         function handlePureStatusMessage(message) {
