@@ -8,7 +8,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\MaxWidth;
 
@@ -37,6 +39,7 @@ class XtermSshTerminal extends Page
 
     // Terminal state
     public bool $isConnected = false;
+    public bool $isCommandRunning = false;
     public ?string $sessionId = null;
 
     /**
@@ -70,52 +73,120 @@ class XtermSshTerminal extends Page
     {
         return $schema
             ->components([
-                Grid::make([
-                    'default' => 1,
-                    'lg' => 2,
-                ])
-                ->schema([
-                    // Left column: Command input
-                    Grid::make(1)
-                        ->schema([
-                            Textarea::make('command')
-                                ->label('SSH Command')
-                                ->placeholder('Enter your SSH command...')
-                                ->rows(8)
-                                ->required()
-                                ->live()
-                                ->columnSpanFull(),
-                        ])
-                        ->columnSpan(1),
-                    
-                    // Right column: Controls
-                    Grid::make(1)
-                        ->schema([
-                            Select::make('selectedHost')
-                                ->label('SSH Host')
-                                ->options(SshHost::where('active', true)->pluck('name', 'id'))
-                                ->required()
-                                ->live()
-                                ->searchable(),
-                            
-                            Grid::make(2)
-                                ->schema([
+                Grid::make(2)
+                    ->schema([
+                        // Left side - Command textarea
+                        Textarea::make('command')
+                            ->hiddenLabel()
+                            ->required()
+                            ->rows(3)
+                            ->placeholder('Enter SSH command(s) to execute...')
+                            ->extraAttributes([
+                                'style' => 'resize: none;',
+                                'id' => 'xterm-command-input',
+                            ])
+                            ->columnSpan(1),
+
+                        // Right side - Two sub-columns for controls
+                        Grid::make(2)
+                            ->schema([
+                                // Left sub-column: Run button and Debug toggle
+                                Group::make([
+                                    // Single button with dual states: Run/Stop
+                                    Actions::make([
+                                        Action::make('commandButton')
+                                            ->label(fn () => $this->isCommandRunning ? 'Stop Command' : 'Run Command')
+                                            ->icon(fn () => $this->isCommandRunning ? 'heroicon-o-stop' : 'heroicon-o-play')
+                                            ->iconPosition('before')
+                                            ->color(fn () => $this->isCommandRunning ? 'danger' : 'primary')
+                                            ->size('lg')
+                                            ->extraAttributes(fn () => [
+                                                'id' => 'xterm-command-btn',
+                                                'class' => 'w-full',
+                                            ])
+                                            ->action(fn () => $this->isCommandRunning ? $this->stopCommand() : $this->runCommand())
+                                            ->requiresConfirmation(false)
+                                            ->button(),
+                                    ]),
+
+                                    // Debug Toggle
+                                    Toggle::make('showDebug')
+                                        ->label('Show Debug')
+                                        ->inline(true)
+                                        ->live(),
+                                ])->columnSpan(1),
+
+                                // Right sub-column: SSH Host selector and Bash Mode toggle
+                                Group::make([
+                                    // SSH Host selector
+                                    Select::make('selectedHost')
+                                        ->hiddenLabel()
+                                        ->placeholder('Select SSH Host')
+                                        ->options(function () {
+                                            return SshHost::where('active', true)
+                                                ->pluck('name', 'id')
+                                                ->toArray();
+                                        })
+                                        ->required()
+                                        ->live()
+                                        ->searchable(),
+
+                                    // Bash Mode toggle
                                     Toggle::make('useBash')
                                         ->label('Use Bash')
                                         ->helperText('Execute with bash -ci for aliases and functions')
-                                        ->live()
-                                        ->inline(false),
-                                    
-                                    Toggle::make('showDebug')
-                                        ->label('Debug Mode')
-                                        ->helperText('Show performance metrics and debug info')
-                                        ->live()
-                                        ->inline(false),
-                                ]),
-                        ])
-                        ->columnSpan(1),
-                ]),
+                                        ->inline(true)
+                                        ->live(),
+                                ])->columnSpan(1),
+                            ])
+                            ->columnSpan(1),
+                    ]),
             ]);
+    }
+
+    /**
+     * Run SSH command (primary action from form button)
+     */
+    public function runCommand(): void
+    {
+        if (!$this->selectedHost) {
+            $this->addError('selectedHost', 'Please select an SSH host.');
+            return;
+        }
+
+        if (empty(trim($this->command))) {
+            $this->addError('command', 'Please enter a command to execute.');
+            return;
+        }
+
+        $this->isCommandRunning = true;
+        
+        // Connect to terminal if not already connected
+        if (!$this->isConnected) {
+            $this->dispatch('connect-xterm-terminal', [
+                'hostId' => $this->selectedHost,
+                'useBash' => $this->useBash,
+                'showDebug' => $this->showDebug,
+            ]);
+        }
+
+        // Execute command in terminal
+        $this->dispatch('execute-xterm-command', [
+            'command' => $this->command,
+            'hostId' => $this->selectedHost,
+            'useBash' => $this->useBash,
+        ]);
+    }
+
+    /**
+     * Stop running command
+     */
+    public function stopCommand(): void
+    {
+        $this->isCommandRunning = false;
+        
+        // Dispatch stop command to frontend
+        $this->dispatch('stop-xterm-command');
     }
 
     /**
@@ -135,29 +206,6 @@ class XtermSshTerminal extends Page
             'hostId' => $this->selectedHost,
             'useBash' => $this->useBash,
             'showDebug' => $this->showDebug,
-        ]);
-    }
-
-    /**
-     * Execute command in terminal
-     */
-    public function executeCommand(): void
-    {
-        if (!$this->selectedHost) {
-            $this->addError('selectedHost', 'Please select an SSH host.');
-            return;
-        }
-
-        if (empty(trim($this->command))) {
-            $this->addError('command', 'Please enter a command to execute.');
-            return;
-        }
-
-        // Dispatch command execution to frontend
-        $this->dispatch('execute-xterm-command', [
-            'command' => $this->command,
-            'hostId' => $this->selectedHost,
-            'useBash' => $this->useBash,
         ]);
     }
 
@@ -198,6 +246,14 @@ class XtermSshTerminal extends Page
     {
         $this->sessionId = $data['sessionId'] ?? null;
         $this->isConnected = $data['connected'] ?? false;
+    }
+
+    /**
+     * Handle command completion (called from frontend)
+     */
+    public function onCommandComplete(): void
+    {
+        $this->isCommandRunning = false;
     }
 
     /**

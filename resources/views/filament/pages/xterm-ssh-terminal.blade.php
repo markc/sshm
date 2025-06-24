@@ -361,6 +361,14 @@
                 if (window.xtermTerminal) {
                     window.xtermTerminal.executeCommand(config.command, {
                         useBash: config.useBash,
+                    }).then(() => {
+                        // Notify Livewire when command completes
+                        setTimeout(() => {
+                            Livewire.dispatch('onCommandComplete');
+                        }, 1000); // 1 second delay to ensure output is complete
+                    }).catch((error) => {
+                        // Also notify on error
+                        Livewire.dispatch('onCommandComplete');
                     });
                 }
             });
@@ -390,6 +398,18 @@
                 
                 if (window.xtermTerminal) {
                     window.xtermTerminal.clear();
+                }
+            });
+
+            // Stop command
+            Livewire.on('stop-xterm-command', () => {
+                debugLog('🛑 Stopping command');
+                
+                if (window.xtermTerminal) {
+                    window.xtermTerminal.disconnect();
+                    
+                    // Notify Livewire that command stopped
+                    Livewire.dispatch('onCommandComplete');
                 }
             });
         });
