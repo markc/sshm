@@ -24,9 +24,10 @@ use Filament\Support\Enums\MaxWidth;
 class XtermSshTerminal extends Page
 {
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-terminal';
-    protected static string $view = 'filament.pages.xterm-ssh-terminal';
     protected static ?string $navigationLabel = 'SSH Terminal';
     protected static ?int $navigationSort = 1;
+    
+    protected string $view = 'filament.pages.xterm-ssh-terminal';
 
     // Form state
     public ?int $selectedHost = null;
