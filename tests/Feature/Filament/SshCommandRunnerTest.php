@@ -83,14 +83,13 @@ describe('SshCommandRunner Feature Tests', function () {
         Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
+                'command' => '', // Explicitly clear the default command
             ])
             ->call('startTerminalCommand')
             ->assertHasErrors(['command']);
     });
 
     it('can execute SSH command successfully', function () {
-        Queue::fake();
-
         $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
@@ -101,12 +100,12 @@ describe('SshCommandRunner Feature Tests', function () {
 
         expect($component->get('isCommandRunning'))->toBe(true);
         expect($component->get('currentProcessId'))->not->toBeNull();
-        Queue::assertPushed(\App\Jobs\RunSshCommand::class);
+
+        // Hybrid mode uses Server-Sent Events, not job queue
+        $component->assertDispatched('start-ssh-stream');
     });
 
     it('handles SSH command errors gracefully', function () {
-        Queue::fake();
-
         $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
@@ -116,12 +115,12 @@ describe('SshCommandRunner Feature Tests', function () {
             ->assertHasNoErrors();
 
         expect($component->get('isCommandRunning'))->toBe(true);
-        Queue::assertPushed(\App\Jobs\RunSshCommand::class);
+
+        // Hybrid mode dispatches streaming event instead of job
+        $component->assertDispatched('start-ssh-stream');
     });
 
     it('displays command execution state', function () {
-        Queue::fake();
-
         $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
@@ -131,11 +130,10 @@ describe('SshCommandRunner Feature Tests', function () {
 
         expect($component->get('isCommandRunning'))->toBe(true);
         expect($component->get('hasTerminalOutput'))->toBe(true);
+        $component->assertDispatched('start-ssh-stream');
     });
 
     it('clears output when executing new command', function () {
-        Queue::fake();
-
         $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
@@ -145,12 +143,10 @@ describe('SshCommandRunner Feature Tests', function () {
 
         expect($component->get('isCommandRunning'))->toBe(true);
         expect($component->get('hasTerminalOutput'))->toBe(true);
-        Queue::assertPushed(\App\Jobs\RunSshCommand::class);
+        $component->assertDispatched('start-ssh-stream');
     });
 
     it('handles connection timeout errors', function () {
-        Queue::fake();
-
         $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
@@ -160,12 +156,10 @@ describe('SshCommandRunner Feature Tests', function () {
             ->assertHasNoErrors();
 
         expect($component->get('isCommandRunning'))->toBe(true);
-        Queue::assertPushed(\App\Jobs\RunSshCommand::class);
+        $component->assertDispatched('start-ssh-stream');
     });
 
     it('preserves form data after command execution', function () {
-        Queue::fake();
-
         $component = Livewire::test(SshCommandRunner::class)
             ->fillForm([
                 'selectedHost' => $this->activeHost->id,
