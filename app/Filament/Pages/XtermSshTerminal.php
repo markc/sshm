@@ -76,7 +76,7 @@ class XtermSshTerminal extends Page
                 Grid::make(2)
                     ->schema([
                         // Left side - Command textarea
-                        Textarea::make('command')
+                        \Filament\Forms\Components\Textarea::make('command')
                             ->hiddenLabel()
                             ->required()
                             ->rows(3)
@@ -110,7 +110,7 @@ class XtermSshTerminal extends Page
                                     ]),
 
                                     // Debug Toggle
-                                    Toggle::make('showDebug')
+                                    \Filament\Forms\Components\Toggle::make('showDebug')
                                         ->label('Show Debug')
                                         ->inline(true)
                                         ->live(),
@@ -119,7 +119,7 @@ class XtermSshTerminal extends Page
                                 // Right sub-column: SSH Host selector and Bash Mode toggle
                                 Group::make([
                                     // SSH Host selector
-                                    Select::make('selectedHost')
+                                    \Filament\Forms\Components\Select::make('selectedHost')
                                         ->hiddenLabel()
                                         ->placeholder('Select SSH Host')
                                         ->options(function () {
@@ -132,7 +132,7 @@ class XtermSshTerminal extends Page
                                         ->searchable(),
 
                                     // Bash Mode toggle
-                                    Toggle::make('useBash')
+                                    \Filament\Forms\Components\Toggle::make('useBash')
                                         ->label('Use Bash')
                                         ->helperText('Execute with bash -ci for aliases and functions')
                                         ->inline(true)
