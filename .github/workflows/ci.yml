@@ -40,8 +40,8 @@ jobs:
     - name: Check PHP syntax
       run: find . -name "*.php" -not -path "./vendor/*" -not -path "./node_modules/*" | xargs -n1 php -l
 
-    - name: Copy environment file
-      run: cp .env.example .env
+    - name: Setup CI environment
+      run: cp .env.ci .env
 
     - name: Generate application key
       run: php artisan key:generate
@@ -55,12 +55,11 @@ jobs:
     - name: Run database migrations
       run: php artisan migrate --force
 
-    - name: Clear Laravel and Filament caches
+    - name: Clear Laravel caches
       run: |
-        php artisan view:clear
         php artisan config:clear
+        php artisan view:clear
         php artisan cache:clear
-        php artisan optimize:clear
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
