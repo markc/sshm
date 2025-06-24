@@ -22,7 +22,7 @@ class SshCommandRunner extends Page
 
     protected static ?int $navigationSort = 1;
 
-    protected string $view = 'filament.pages.ssh-command-runner-optimized';
+    protected string $view = 'filament.pages.ssh-command-runner-hybrid';
 
     public ?string $currentProcessId = null;
 
@@ -51,6 +51,11 @@ class SshCommandRunner extends Page
                 $this->selectedHost = (string) $host->id;
             }
         }
+
+        // Set default command if command is empty
+        if (empty($this->command)) {
+            $this->command = $settings->getDefaultCommand();
+        }
     }
 
     public ?string $selectedHost = null;
@@ -69,6 +74,9 @@ class SshCommandRunner extends Page
                             ->required()
                             ->rows(3)
                             ->placeholder('Enter SSH command(s) to execute...')
+                            ->default(function () {
+                                return $this->command ?: app(SshSettings::class)->getDefaultCommand();
+                            })
                             ->extraAttributes([
                                 'style' => 'resize: none;',
                                 'id' => 'command-input',
@@ -228,6 +236,12 @@ class SshCommandRunner extends Page
         return [
             'setProcessId' => 'setProcessId',
             'setRunningState' => 'setRunningState',
+            'setTerminalVisibility' => 'setTerminalVisibility',
         ];
+    }
+
+    public function setTerminalVisibility(bool $visible): void
+    {
+        $this->hasTerminalOutput = $visible;
     }
 }

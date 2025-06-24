@@ -1,0 +1,27 @@
+[Unit]
+Description=SSHM FrankenPHP Server
+Documentation=https://frankenphp.dev/docs/
+After=network.target
+Wants=network.target
+
+[Service]
+Type=notify
+User=markc
+Group=markc
+WorkingDirectory=/home/markc/Dev/sshm
+Environment=GOMAXPROCS=4
+Environment=GOMEMLIMIT=1GiB
+ExecStart=/usr/local/bin/frankenphp run --config /home/markc/Dev/sshm/Caddyfile
+ExecReload=/bin/kill -USR1 $MAINPID
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+LimitNPROC=1048576
+PrivateTmp=true
+ProtectSystem=strict
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ReadWritePaths=/home/markc/Dev/sshm/storage /home/markc/Dev/sshm/bootstrap/cache
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

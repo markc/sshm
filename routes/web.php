@@ -8,12 +8,24 @@ Route::get('/', function () {
 });
 
 // Optimized SSH execution routes (bypassing queue system for performance)
-Route::middleware(['auth', 'throttle:60,1'])->group(function () {
+$middlewareGroup = ['throttle:60,1'];
+
+// Add appropriate auth middleware based on desktop mode
+if (config('app.desktop_mode', false)) {
+    $middlewareGroup[] = \App\Http\Middleware\DesktopAuthenticate::class;
+} else {
+    $middlewareGroup[] = 'auth';
+}
+
+Route::middleware($middlewareGroup)->group(function () {
     Route::post('/api/ssh/stream', [OptimizedSshController::class, 'streamCommand'])
         ->name('api.ssh.stream');
 
     Route::get('/api/ssh/cached', [OptimizedSshController::class, 'getCachedResult'])
         ->name('api.ssh.cached');
+
+    Route::get('/api/ssh/hosts', [OptimizedSshController::class, 'getHosts'])
+        ->name('api.ssh.hosts');
 });
 
 // In desktop mode, redirect any login attempts to the admin dashboard

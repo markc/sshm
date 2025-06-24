@@ -36,6 +36,7 @@ class SshSettings extends Page
             'default_ssh_host' => $settings->getDefaultSshHost(),
             'default_ssh_key' => $settings->getDefaultSshKey(),
             'timeout' => $settings->getTimeout(),
+            'default_command' => $settings->getDefaultCommand(),
         ]);
     }
 
@@ -43,55 +44,71 @@ class SshSettings extends Page
     {
         return $schema
             ->components([
-                Grid::make(2)
+                Grid::make(3)
                     ->schema([
+                        // Column 1: Basic SSH Configuration
                         TextInput::make('home_dir')
                             ->label('SSH Home Directory')
                             ->required()
                             ->placeholder('/home/user')
-                            ->helperText('The home directory where the .ssh folder is located'),
+                            ->helperText('The home directory where the .ssh folder is located')
+                            ->columnSpan(1),
 
                         TextInput::make('default_user')
                             ->label('Default SSH User')
                             ->required()
                             ->placeholder('root')
-                            ->helperText('The default user for SSH connections'),
+                            ->helperText('The default user for SSH connections')
+                            ->columnSpan(1),
 
                         TextInput::make('default_port')
                             ->label('Default SSH Port')
                             ->required()
                             ->numeric()
                             ->placeholder('22')
-                            ->helperText('The default port for SSH connections'),
+                            ->helperText('The default port for SSH connections')
+                            ->columnSpan(1),
 
+                        // Column 2: Connection Settings
                         TextInput::make('default_key_type')
                             ->label('Default SSH Key Type')
                             ->required()
                             ->placeholder('ed25519')
-                            ->helperText('The default key type for new SSH keys'),
+                            ->helperText('The default key type for new SSH keys')
+                            ->columnSpan(1),
 
                         TextInput::make('default_ssh_host')
                             ->label('Default SSH Host')
                             ->placeholder('server.example.com')
-                            ->helperText('Default SSH host to select in the SSH Commands page'),
+                            ->helperText('Default SSH host to select in the SSH Commands page')
+                            ->columnSpan(1),
 
                         TextInput::make('default_ssh_key')
                             ->label('Default SSH Key Path')
                             ->placeholder('/path/to/key')
-                            ->helperText('Default SSH key path for connections'),
+                            ->helperText('Default SSH key path for connections')
+                            ->columnSpan(1),
 
+                        // Column 3: Performance & Behavior Settings
                         TextInput::make('timeout')
                             ->label('SSH Command Timeout (seconds)')
                             ->required()
                             ->numeric()
-                            ->placeholder('300')
+                            ->placeholder('1800')
                             ->helperText('Maximum time in seconds to wait for SSH commands to complete')
-                            ->columnSpan(2),
+                            ->columnSpan(1),
+
+                        TextInput::make('default_command')
+                            ->label('Default Command')
+                            ->placeholder('free -h')
+                            ->helperText('Default command to populate in the SSH Command Runner when the command field is empty')
+                            ->columnSpan(1),
 
                         Toggle::make('strict_host_checking')
                             ->label('Strict Host Key Checking')
                             ->helperText('Enable strict host key checking for SSH connections')
-                            ->columnSpan(2),
+                            ->inline(false)
+                            ->columnSpan(1),
                     ]),
             ])
             ->statePath('data');

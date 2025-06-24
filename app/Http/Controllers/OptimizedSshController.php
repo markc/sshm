@@ -493,4 +493,17 @@ class OptimizedSshController extends Controller
 
         return response()->json(['cached' => false]);
     }
+
+    /**
+     * Get active SSH hosts for the hybrid frontend
+     */
+    public function getHosts(Request $request)
+    {
+        $hosts = SshHost::where('active', true)
+            ->select('id', 'name', 'hostname', 'user', 'port')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($hosts);
+    }
 }

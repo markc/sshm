@@ -23,7 +23,8 @@
         "nunomaduro/collision": "^8.8.1",
         "orchestra/testbench": ">=10.4",
         "pestphp/pest": "^3.8.2",
-        "phpunit/phpunit": "^11.5.15"
+        "phpunit/phpunit": "^11.5.15",
+        "symfony/panther": "^2.2"
     },
     "autoload": {
         "psr-4": {

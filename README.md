@@ -27,10 +27,42 @@ composer install && npm install
 cp .env.example .env && php artisan key:generate
 touch database/database.sqlite && php artisan migrate
 php artisan make:filament-user
-npm run build && php artisan serve
+npm run build && ./scripts/dev-server.sh
 ```
 
 Access at: http://localhost:8000/admin
+
+## Starting SSHM
+
+### Development Mode (Recommended)
+```bash
+# Simple development server
+./scripts/dev-server.sh
+
+# Or use the advanced start script
+./scripts/start-sshm.sh dev
+```
+
+### Production Mode (Systemd Service)
+```bash
+# Install systemd service (one-time setup)
+./scripts/install-service.sh
+
+# Start production service
+./scripts/start-sshm.sh prod
+
+# Other service commands
+./scripts/start-sshm.sh status   # Show status
+./scripts/start-sshm.sh stop     # Stop service
+./scripts/start-sshm.sh restart  # Restart service
+./scripts/start-sshm.sh logs     # Follow logs
+```
+
+### Manual FrankenPHP
+```bash
+# If you prefer to start manually
+frankenphp run --config Caddyfile
+```
 
 ## Desktop Mode
 

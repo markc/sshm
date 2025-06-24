@@ -1,0 +1,9 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+/* Custom spacing for SSH Command Runner sections */
+.ssh-command-runner-hybrid .fi-section-container {
+    @apply mt-6 mb-6;
+}

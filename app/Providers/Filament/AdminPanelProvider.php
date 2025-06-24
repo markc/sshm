@@ -43,6 +43,7 @@ class AdminPanelProvider extends PanelProvider
                 SshStatsWidget::class,
             ])
             ->sidebarCollapsibleOnDesktop()
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

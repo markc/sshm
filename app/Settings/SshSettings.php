@@ -24,6 +24,8 @@ class SshSettings
 
     public int $timeout = 300;
 
+    public string $default_command = 'free -h';
+
     public function __construct(array $attributes = [])
     {
         if (isset($attributes['home_dir'])) {
@@ -49,6 +51,9 @@ class SshSettings
         }
         if (isset($attributes['timeout'])) {
             $this->timeout = (int) $attributes['timeout'];
+        }
+        if (isset($attributes['default_command'])) {
+            $this->default_command = $attributes['default_command'];
         }
     }
 
@@ -92,6 +97,11 @@ class SshSettings
         return $this->timeout;
     }
 
+    public function getDefaultCommand(): string
+    {
+        return $this->default_command;
+    }
+
     public function save(array $data = []): void
     {
         // Update properties if data is provided
@@ -120,6 +130,9 @@ class SshSettings
             if (isset($data['timeout'])) {
                 $this->timeout = (int) $data['timeout'];
             }
+            if (isset($data['default_command'])) {
+                $this->default_command = $data['default_command'];
+            }
         }
 
         // Save to database if possible
@@ -146,6 +159,7 @@ class SshSettings
             ['group' => 'ssh', 'name' => 'default_ssh_host', 'value' => $this->default_ssh_host],
             ['group' => 'ssh', 'name' => 'default_ssh_key', 'value' => $this->default_ssh_key],
             ['group' => 'ssh', 'name' => 'timeout', 'value' => $this->timeout],
+            ['group' => 'ssh', 'name' => 'default_command', 'value' => $this->default_command],
         ];
 
         foreach ($settings as $setting) {
@@ -170,6 +184,8 @@ class SshSettings
             'SSH_STRICT_HOST_CHECKING' => $this->strict_host_checking ? 'true' : 'false',
             'SSH_DEFAULT_HOST' => $this->default_ssh_host,
             'SSH_DEFAULT_KEY' => $this->default_ssh_key,
+            'SSH_TIMEOUT' => $this->timeout,
+            'SSH_DEFAULT_COMMAND' => $this->default_command,
         ];
 
         foreach ($values as $key => $value) {

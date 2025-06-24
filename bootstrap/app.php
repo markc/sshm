@@ -22,6 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Configure authentication redirects for FrankenPHP
         $middleware->redirectUsersTo('/admin');
         $middleware->redirectGuestsTo('/admin/login');
+
+        // Exclude SSH streaming from CSRF protection
+        $middleware->validateCsrfTokens(except: [
+            'api/ssh/stream',
+            'api/ssh/cached',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
