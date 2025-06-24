@@ -23,7 +23,7 @@ use Filament\Support\Enums\MaxWidth;
  */
 class XtermSshTerminal extends Page
 {
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-terminal';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-window';
     protected static ?string $navigationLabel = 'SSH Terminal';
     protected static ?int $navigationSort = 1;
     
