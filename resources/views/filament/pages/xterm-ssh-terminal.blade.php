@@ -1,96 +1,97 @@
-<div>
+<div class="xterm-ssh-terminal">
+    @pushOnce('styles')
     <style>
-        /* Ultra-Fast Xterm.js Styling - Optimized for Performance */
+        /* Performance-optimized terminal container using Filament design tokens */
         .xterm-terminal-container {
             contain: strict;
             content-visibility: auto;
-            contain-intrinsic-size: 0 600px;
+            contain-intrinsic-size: 0 500px;
             will-change: transform;
-            transform: translateZ(0); /* GPU acceleration */
+            transform: translateZ(0);
             backface-visibility: hidden;
         }
         
+        /* Terminal wrapper with Filament panel styling */
         .xterm-terminal-wrapper {
-            background: #000000;
-            border: 2px solid #333;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-            overflow: hidden;
-            position: relative;
+            @apply rounded-xl overflow-hidden;
+            background: rgb(var(--gray-950));
+            border: 1px solid rgb(var(--gray-800));
+            box-shadow: var(--fi-shadow-lg);
         }
         
+        /* Dark mode compatibility */
+        .dark .xterm-terminal-wrapper {
+            background: rgb(var(--gray-950));
+            border-color: rgb(var(--gray-700));
+        }
+        
+        /* Terminal header with Filament styling */
         .xterm-terminal-header {
-            background: linear-gradient(135deg, #2d3748, #1a202c);
-            border-bottom: 1px solid #4a5568;
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 48px;
+            @apply px-4 py-3 flex items-center justify-between;
+            background: rgb(var(--gray-900));
+            border-bottom: 1px solid rgb(var(--gray-800));
+        }
+        
+        .dark .xterm-terminal-header {
+            background: rgb(var(--gray-950));
+            border-bottom-color: rgb(var(--gray-700));
         }
         
         .xterm-terminal-title {
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: system-ui, -apple-system, sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            @apply text-sm font-medium text-gray-100 flex items-center gap-2;
         }
         
+        /* Status badge using Filament badge styles */
         .xterm-terminal-status {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-weight: 500;
+            @apply inline-flex items-center px-2 py-1 text-xs font-medium rounded-md;
         }
         
         .xterm-terminal-status.connected {
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
+            @apply bg-success-50 text-success-700 ring-1 ring-success-600/20;
+        }
+        
+        .dark .xterm-terminal-status.connected {
+            @apply bg-success-400/10 text-success-400 ring-success-400/20;
         }
         
         .xterm-terminal-status.disconnected {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
+            @apply bg-danger-50 text-danger-700 ring-1 ring-danger-600/20;
+        }
+        
+        .dark .xterm-terminal-status.disconnected {
+            @apply bg-danger-400/10 text-danger-400 ring-danger-400/20;
         }
         
         .xterm-terminal-status.connecting {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
+            @apply bg-primary-50 text-primary-700 ring-1 ring-primary-600/20 animate-pulse;
         }
         
+        .dark .xterm-terminal-status.connecting {
+            @apply bg-primary-400/10 text-primary-400 ring-primary-400/20;
+        }
+        
+        /* macOS-style control buttons */
         .xterm-terminal-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
+            @apply flex items-center gap-2;
         }
         
         .xterm-control-button {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: opacity 0.2s ease;
-        }
-        
-        .xterm-control-button:hover {
-            opacity: 0.8;
+            @apply w-3 h-3 rounded-full cursor-pointer transition-opacity duration-200 hover:opacity-80;
         }
         
         .xterm-control-button.close { background: #ff5f57; }
         .xterm-control-button.minimize { background: #ffbd2e; }
         .xterm-control-button.maximize { background: #28ca42; }
         
+        /* Terminal container */
         #xterm-container {
-            height: 600px;
+            height: 500px;
             width: 100%;
-            padding: 0;
-            margin: 0;
+            @apply p-0 m-0;
+            background: rgb(var(--gray-950));
         }
         
-        /* Performance optimizations for xterm.js */
+        /* Performance optimizations */
         .xterm-screen {
             contain: layout style paint;
         }
@@ -99,52 +100,36 @@
             contain: layout style;
         }
         
-        /* Debug panel styling */
+        /* Debug panel with Filament styling */
         .xterm-debug-panel {
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 16px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 12px;
-            color: #00ff00;
+            @apply mt-4 p-4 rounded-lg border;
+            background: rgb(var(--gray-950));
+            border-color: rgb(var(--gray-800));
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        
+        .dark .xterm-debug-panel {
+            background: rgb(var(--gray-900));
+            border-color: rgb(var(--gray-700));
         }
         
         .xterm-debug-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
+            @apply grid grid-cols-1 md:grid-cols-3 gap-4;
         }
         
         .xterm-debug-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            @apply flex justify-between py-1 text-xs border-b border-gray-800/50;
         }
         
         .xterm-debug-label {
-            color: #74c0fc;
-            font-weight: 500;
+            @apply text-gray-400 font-medium;
         }
         
         .xterm-debug-value {
-            color: #00ff00;
-            font-weight: 600;
-        }
-        
-        /* Pulse animation for connecting status */
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        .xterm-terminal-status.connecting {
-            animation: pulse 2s infinite;
+            @apply text-success-400 font-semibold font-mono;
         }
     </style>
+    @endPushOnce
 
     <div class="xterm-ssh-terminal space-y-6">
         <!-- Form Section -->
@@ -292,7 +277,7 @@
             init() {
                 console.log('🚀 Initializing Ultra-Fast Xterm.js WebSocket Terminal');
                 
-                // Create terminal with performance-optimized configuration
+                // Create terminal with Filament-compatible configuration
                 this.terminal = new Terminal({
                     // Performance optimizations
                     renderer: 'webgl',              // GPU acceleration
@@ -302,19 +287,35 @@
                     fastScrollModifier: 'alt',      // Efficient scrolling
                     scrollback: 1000,               // Reasonable buffer size
                     
-                    // Visual configuration
+                    // Filament-compatible visual configuration
                     theme: {
-                        background: '#000000',
-                        foreground: '#00ff00',
-                        cursor: '#00ff00',
-                        cursorAccent: '#000000',
-                        selection: 'rgba(255,255,255,0.3)',
+                        background: 'rgb(9, 9, 11)',       // gray-950
+                        foreground: 'rgb(244, 244, 245)',  // gray-100
+                        cursor: 'rgb(34, 197, 94)',        // green-500 (success)
+                        cursorAccent: 'rgb(9, 9, 11)',     // gray-950
+                        selection: 'rgba(59, 130, 246, 0.3)', // blue-500 with opacity
+                        black: 'rgb(39, 39, 42)',          // gray-800
+                        red: 'rgb(239, 68, 68)',           // red-500
+                        green: 'rgb(34, 197, 94)',         // green-500
+                        yellow: 'rgb(234, 179, 8)',        // yellow-500
+                        blue: 'rgb(59, 130, 246)',         // blue-500
+                        magenta: 'rgb(168, 85, 247)',      // purple-500
+                        cyan: 'rgb(6, 182, 212)',          // cyan-500
+                        white: 'rgb(244, 244, 245)',       // gray-100
+                        brightBlack: 'rgb(63, 63, 70)',    // gray-700
+                        brightRed: 'rgb(248, 113, 113)',   // red-400
+                        brightGreen: 'rgb(74, 222, 128)',  // green-400
+                        brightYellow: 'rgb(250, 204, 21)', // yellow-400
+                        brightBlue: 'rgb(96, 165, 250)',   // blue-400
+                        brightMagenta: 'rgb(196, 121, 251)', // purple-400
+                        brightCyan: 'rgb(34, 211, 238)',   // cyan-400
+                        brightWhite: 'rgb(255, 255, 255)', // white
                     },
                     
-                    // Font configuration
-                    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                    // Font configuration with Filament's font stack
+                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                     fontSize: 14,
-                    lineHeight: 1.2,
+                    lineHeight: 1.4,
                     
                     // Behavior
                     bell: false,                    // Disable audio bell
