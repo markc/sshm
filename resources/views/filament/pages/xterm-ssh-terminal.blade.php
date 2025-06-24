@@ -152,7 +152,7 @@
             <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                 <div class="fi-section-content-ctn">
                     <div class="fi-section-content p-8">
-                        {{ $this->form }}
+                        {{ $this->form() }}
                     </div>
                 </div>
             </div>
@@ -254,8 +254,8 @@
     </div>
 
     <!-- Ultra-Fast Xterm.js WebSocket Integration -->
-    <script type="module">
-        import XtermWebSocketTerminal from '/resources/js/xterm-websocket.js';
+    <script>
+        // Since we're including xterm-websocket.js in app.js, it should be available globally
         
         // Global terminal instance
         window.xtermTerminal = null;
@@ -288,8 +288,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             debugLog('🚀 Initializing Ultra-Fast Xterm.js WebSocket Terminal');
             
-            // Create terminal instance
-            window.xtermTerminal = new XtermWebSocketTerminal();
+            // Create terminal instance (XtermWebSocketTerminal should be available globally)
+            if (typeof XtermWebSocketTerminal !== 'undefined') {
+                window.xtermTerminal = new XtermWebSocketTerminal();
+            } else {
+                console.error('❌ XtermWebSocketTerminal not available. Check if xterm-websocket.js is loaded.');
+                return;
+            }
             
             // Mount to container
             const container = document.getElementById('xterm-container');

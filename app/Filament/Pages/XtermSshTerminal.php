@@ -3,12 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Models\SshHost;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Select;
+use Filament\Schemas\Components\Textarea;
+use Filament\Schemas\Components\Toggle;
+use Filament\Schemas\Schema;
 use Filament\Support\Enums\MaxWidth;
 
 /**
@@ -22,7 +23,7 @@ use Filament\Support\Enums\MaxWidth;
  */
 class XtermSshTerminal extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-command-line';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-terminal';
     protected static string $view = 'filament.pages.xterm-ssh-terminal';
     protected static ?string $navigationLabel = 'SSH Terminal';
     protected static ?int $navigationSort = 1;
@@ -62,12 +63,12 @@ class XtermSshTerminal extends Page
     }
 
     /**
-     * Configure the form
+     * Configure the form schema
      */
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Grid::make([
                     'default' => 1,
                     'lg' => 2,
@@ -204,28 +205,28 @@ class XtermSshTerminal extends Page
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('connect')
+            Action::make('connect')
                 ->label($this->isConnected ? 'Reconnect' : 'Connect')
                 ->icon('heroicon-o-play')
                 ->color('success')
                 ->action('connectToHost')
                 ->visible(!$this->isConnected),
                 
-            \Filament\Actions\Action::make('execute')
+            Action::make('execute')
                 ->label('Run Command')
                 ->icon('heroicon-o-play')
                 ->color('primary')
                 ->action('executeCommand')
                 ->visible($this->isConnected),
                 
-            \Filament\Actions\Action::make('clear')
+            Action::make('clear')
                 ->label('Clear')
                 ->icon('heroicon-o-trash')
                 ->color('gray')
                 ->action('clearTerminal')
                 ->visible($this->isConnected),
                 
-            \Filament\Actions\Action::make('disconnect')
+            Action::make('disconnect')
                 ->label('Disconnect')
                 ->icon('heroicon-o-stop')
                 ->color('danger')
