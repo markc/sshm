@@ -5,19 +5,36 @@
 [![Laravel 12](https://img.shields.io/badge/Laravel-12-FF2D20.svg?style=flat&logo=laravel)](https://laravel.com)
 [![Filament 4](https://img.shields.io/badge/Filament-4.0-FFAA00.svg?style=flat&logo=filament)](https://filamentphp.com)
 
-**THIS APPLICATION SHOULD ONLY BE USED ON LOCALHOST (127.0.0.1) AND NEVER ON A PUBLIC OR EXPOSED IP ADDRESS. IT ALLOWS ARBITRARY COMMAND EXECUTION ON REMOTE SERVERS THROUGH A WEB INTERFACE.**
+⚠️ **SECURITY WARNING**: This application should only be used on localhost (127.0.0.1) and never on a public or exposed IP address. It allows arbitrary command execution on remote servers through a web interface.
+
+🚧 **WORK IN PROGRESS**: This project is actively under development and not yet a finished product. Features may be incomplete or subject to change.
 
 *This project was entirely "vibe" coded with the help of Claude Code - collaborative development at its finest! 🤖*
 
-A modern web-based SSH management application built with Laravel 12 and Filament 4.0. Execute remote commands, manage SSH hosts and keys, all through an intuitive web interface.
+A modern web-based SSH management application built with Laravel 12 and Filament 4.0. Features a hybrid terminal emulator with real-time streaming, zero FOUC, and ultra-fast performance.
 
-## Features
+![SSH Manager Terminal](public/img/20250624_SSH_Manager_Terminal.jpg)
 
-- **Real-time command execution** with streaming output
-- **SSH host management** with connection testing
-- **SSH key generation** and deployment
-- **Advanced debugging** and performance timing
-- **Desktop mode** for trusted environments
+## Core Features
+
+- **🚀 Hybrid Terminal**: Real-time SSH command execution with zero FOUC
+- **⚡ Ultra-Fast Streaming**: Server-Sent Events with GPU acceleration
+- **🖥️ Classic Terminal**: Authentic 80x25 terminal emulator design
+- **🔧 Host Management**: SSH hosts and keys with connection testing
+- **🐛 Advanced Debugging**: Performance metrics and detailed logging
+- **🖱️ Desktop Mode**: Authentication-free mode for trusted environments
+
+## Filament SSH Terminal Plugin
+
+This project has spawned a **standalone Filament plugin** that can be used in any Filament application:
+
+**📦 [filament-ssh-terminal](https://github.com/markc/filament-ssh-terminal)** - Reusable hybrid SSH terminal widget
+
+```bash
+composer require markc/filament-ssh-terminal
+```
+
+The plugin preserves all performance optimizations from this project and eliminates the common Livewire morphing conflicts that plague SSH terminals.
 
 ## Quick Start
 

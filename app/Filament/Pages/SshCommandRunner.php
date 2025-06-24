@@ -107,10 +107,9 @@ class SshCommandRunner extends Page
 
                                     // Debug Toggle
                                     Toggle::make('showDebug')
-                                        ->label('Show Debug Information')
+                                        ->label('Show Debug')
                                         ->inline(true)
-                                        ->live()
-                                        ->extraAttributes(['class' => 'mt-4']),
+                                        ->live(),
                                 ])->columnSpan(1),
 
                                 // Right sub-column: SSH Host selector and Bash Mode toggle
@@ -144,9 +143,8 @@ class SshCommandRunner extends Page
 
                                     // Bash Mode Toggle
                                     Toggle::make('useBashMode')
-                                        ->label('Use Bash Mode')
-                                        ->inline(true)
-                                        ->extraAttributes(['class' => 'mt-2']),
+                                        ->label('Bash Mode')
+                                        ->inline(true),
 
                                 ])->columnSpan(1),
                             ])
