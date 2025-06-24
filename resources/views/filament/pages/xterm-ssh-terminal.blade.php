@@ -152,7 +152,7 @@
             <div class="fi-section rounded-xl bg-white shadow-lg ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                 <div class="fi-section-content-ctn">
                     <div class="fi-section-content p-8">
-                        {{ $this->form() }}
+                        {{ $this->form }}
                     </div>
                 </div>
             </div>
