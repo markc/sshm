@@ -115,7 +115,8 @@ class OptimizedSshController extends Controller
                 while (($pos = strpos($errorLineBuffer, "\n")) !== false) {
                     $line = substr($errorLineBuffer, 0, $pos);
                     $errorLineBuffer = substr($errorLineBuffer, $pos + 1);
-                    if (! empty(trim($line)) && ! $this->shouldFilterLine($line)) {
+                    // Send ALL error lines including empty ones, only filter SSH warnings
+                    if (! $this->shouldFilterLine($line)) {
                         $allErrorLines[] = $line;
                         $this->sendSSE('error', $line, $processId);
                     }
@@ -128,7 +129,8 @@ class OptimizedSshController extends Controller
                 while (($pos = strpos($lineBuffer, "\n")) !== false) {
                     $line = substr($lineBuffer, 0, $pos);
                     $lineBuffer = substr($lineBuffer, $pos + 1);
-                    if (! empty(trim($line)) && ! $this->shouldFilterLine($line)) {
+                    // Send ALL lines including empty ones for proper formatting, only filter SSH warnings
+                    if (! $this->shouldFilterLine($line)) {
                         $allOutputLines[] = $line;
                         $this->sendSSE('output', $line, $processId);
                     }
@@ -145,20 +147,6 @@ class OptimizedSshController extends Controller
                           str_contains($output, "\n"); // Flush on newlines for better formatting
 
             if ($shouldFlush) {
-                // Send any remaining partial lines as output for real-time feel
-                if (! empty($lineBuffer) && $timeSinceFlush > 0.05) { // 50ms delay for partial lines
-                    if (! $this->shouldFilterLine($lineBuffer)) {
-                        $this->sendSSE('output', $lineBuffer, $processId);
-                    }
-                    $lineBuffer = '';
-                }
-                if (! empty($errorLineBuffer) && $timeSinceFlush > 0.05) {
-                    if (! $this->shouldFilterLine($errorLineBuffer)) {
-                        $this->sendSSE('error', $errorLineBuffer, $processId);
-                    }
-                    $errorLineBuffer = '';
-                }
-
                 $lastFlushTime = $currentTime;
 
                 // Force immediate browser rendering
